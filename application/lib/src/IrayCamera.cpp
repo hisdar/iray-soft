@@ -5,14 +5,20 @@
 #include <sys/mman.h>
 #include <memory.h>
 #include <fcntl.h>
+#include <string.h>
+#include <malloc.h>
 
 #include "base-def.h"
 #include "IrayCamera.h"
 
 IrayCamera::IrayCamera()
 {
-	frameReceiver = NULL;
-	m_isPrintFrameInfo = 0;
+	m_frame_receiver = NULL;
+	m_is_print_frame_info = 0;
+//	m_field_type = V4L2_FIELD_NONE;
+	m_field_type = V4L2_FIELD_ALTERNATE;
+
+	memset(&m_frame_buf, 0x00, sizeof(v4l2_user_buffer));
 }
 
 IrayCamera::~IrayCamera()
@@ -22,7 +28,7 @@ IrayCamera::~IrayCamera()
 
 void IrayCamera::setFrameReceiver(IrayCameraRcv *fr)
 {
-	frameReceiver = fr;
+	m_frame_receiver = fr;
 }
 
 /**
@@ -32,8 +38,7 @@ int IrayCamera::startCapture(int count, u32 isPrintInfo)
 {
 	int ret = 0;
 
-	m_isPrintFrameInfo = isPrintInfo;
-
+	m_is_print_frame_info = isPrintInfo;
 	
 	ret = open();
 	if (ret) {
@@ -99,11 +104,12 @@ int IrayCamera::startCapture(int count, u32 isPrintInfo)
 int IrayCamera::printFrameInfo()
 {
 	printf("------------------------------------\n");
-	printf("|index     =%u\n", m_v4l2_buf.index);
-	printf("|type      =%u\n", m_v4l2_buf.type);
-	printf("|bytesused =%u\n", m_v4l2_buf.bytesused);
-	printf("|flags     =%u\n", m_v4l2_buf.flags);
-	printf("|field     =%u\n", m_v4l2_buf.field);
+	printf("| index     =%u\n", m_v4l2_buf.index);
+	printf("| type      =%u\n", m_v4l2_buf.type);
+	printf("| bytesused =%u\n", m_v4l2_buf.bytesused);
+	printf("| flags     =%u\n", m_v4l2_buf.flags);
+	printf("| field     =%u\n", m_v4l2_buf.field);
+	printf("| sequence  =%u\n", m_v4l2_buf.sequence);
 	printf("------------------------------------\n");
 
 	return 0;
@@ -157,10 +163,18 @@ int IrayCamera::getFormatDefault()
 		return ret;
 	}
 
-	iray_dbg("frame width: [%u]\n", m_v4l2_fmt.fmt.pix.width);
-    iray_dbg("frame height: [%u]\n", m_v4l2_fmt.fmt.pix.height);
-	iray_dbg("frame field: [%u]\n", m_v4l2_fmt.fmt.pix.field);
-	//iray_dbg("frame field: [%u]\n", fmt.fmt.pix.field);
+	iray_dbg("fmt width       : [%u]\n", m_v4l2_fmt.fmt.pix.width);
+    iray_dbg("fmt height      : [%u]\n", m_v4l2_fmt.fmt.pix.height);
+	iray_dbg("fmt pixelformat : [%u]\n", m_v4l2_fmt.fmt.pix.pixelformat);
+	iray_dbg("fmt field       : [%u]\n", m_v4l2_fmt.fmt.pix.field);
+	iray_dbg("fmt bytesperline: [%u]\n", m_v4l2_fmt.fmt.pix.bytesperline);
+	iray_dbg("fmt sizeimage   : [%u]\n", m_v4l2_fmt.fmt.pix.sizeimage);
+	iray_dbg("fmt colorspace  : [%u]\n", m_v4l2_fmt.fmt.pix.colorspace);
+	iray_dbg("fmt priv        : [%u]\n", m_v4l2_fmt.fmt.pix.priv);
+	iray_dbg("fmt flags       : [%u]\n", m_v4l2_fmt.fmt.pix.flags);
+	iray_dbg("fmt ycbcr_enc   : [%u]\n", m_v4l2_fmt.fmt.pix.ycbcr_enc);
+	iray_dbg("fmt quantization: [%u]\n", m_v4l2_fmt.fmt.pix.quantization);
+	iray_dbg("fmt xfer_func   : [%u]\n", m_v4l2_fmt.fmt.pix.xfer_func);
 
 	return SUCCESS;
 }
@@ -169,9 +183,12 @@ int IrayCamera::setFormatDefault()
 {
 	m_v4l2_fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-	m_v4l2_fmt.fmt.pix.width = IMAGE_WIDTH;
-	m_v4l2_fmt.fmt.pix.height = IMAGE_HEIGHT;
-	m_v4l2_fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_UYVY;
+	m_v4l2_fmt.fmt.pix.field = m_field_type;
+	m_v4l2_fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
+
+	iray_dbg("---------------------------------\n");
+	iray_dbg("set pix.field=%d\n", m_v4l2_fmt.fmt.pix.field);
+	iray_dbg("set pix.pixelformat=%d\n", m_v4l2_fmt.fmt.pix.pixelformat);
 
 	return setFormat(&m_v4l2_fmt);
 }
@@ -301,8 +318,7 @@ int IrayCamera::qBufs()
 int IrayCamera::dQueBuf()
 {
 	int ret = 0;
-	IrayCameraData frameData;
-		
+	
 	m_v4l2_buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	m_v4l2_buf.memory = V4L2_MEMORY_MMAP;
 	ret = ioctl(m_cam_fd, VIDIOC_DQBUF, &m_v4l2_buf);
@@ -313,15 +329,11 @@ int IrayCamera::dQueBuf()
 
 	// this place, should check the following code
 	// save_file(m_user_buffer[m_v4l2_buf.index].addr, m_user_buffer[m_v4l2_buf.index].length, i);
-	if (frameReceiver != NULL) {
-		frameData.setFormat(&m_v4l2_fmt);
-		frameData.setAddr(m_user_buffer[m_v4l2_buf.index].addr);
-		frameData.setLength(m_user_buffer[m_v4l2_buf.index].length);
-		
-		frameReceiver->receiveFrame(&frameData);
+	if (m_frame_receiver != NULL) {
+		notifyFrameData(&m_user_buffer[m_v4l2_buf.index]);
 	}
 
-	if (m_isPrintFrameInfo) {
+	if (m_is_print_frame_info) {
 		printFrameInfo();
 	}
 
@@ -366,4 +378,57 @@ int IrayCamera::streamOff()
 	return SUCCESS;
 }
 
+int IrayCamera::notifyFrameData(v4l2_user_buffer *srcData)
+{
+	m_frame_data.setFormat(&m_v4l2_fmt);
+
+	if (m_v4l2_fmt.fmt.pix.field == V4L2_FIELD_ALTERNATE) {
+		initFrameBuffer(srcData);
+		int image_width = m_v4l2_fmt.fmt.pix.width * 2;
+		//int image_height = m_v4l2_fmt.fmt.pix.height;
+
+		char *tag_addr = NULL;
+		char *src_addr = srcData->addr;
+		
+		if (m_v4l2_buf.sequence % 2 == 0) {
+			tag_addr = m_frame_buf.addr;
+			for	(int i = 0; i < 288; i++) {
+				memcpy(tag_addr, src_addr, image_width);
+				tag_addr += image_width * 2;
+				src_addr += image_width;
+			}
+		} else {
+			tag_addr = m_frame_buf.addr + image_width;
+			for	(int i = 0; i < 288; i++) {
+				memcpy(tag_addr, src_addr, image_width);
+				tag_addr += image_width * 2;
+				src_addr += image_width;
+			}
+
+			m_frame_data.setAddr(m_frame_buf.addr);
+			m_frame_data.setLength(m_frame_buf.length);
+		}
+	} else {
+		m_frame_data.setAddr(srcData->addr);
+		m_frame_data.setLength(srcData->length);
+	}
+
+	m_frame_receiver->receiveFrame(&m_frame_data);
+
+	return 0;
+}
+
+void IrayCamera::initFrameBuffer(v4l2_user_buffer *srcData)
+{
+	if (m_frame_buf.length != srcData->length) {
+		CHECK_FREE(m_frame_buf.addr);
+		m_frame_buf.length = srcData->length;
+		m_frame_buf.addr = (char *)malloc(srcData->length);
+	}
+}
+
+void IrayCamera::setFieldType(u32 fieldType)
+{
+	m_field_type = fieldType;
+}
 

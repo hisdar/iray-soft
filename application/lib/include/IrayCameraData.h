@@ -28,7 +28,7 @@ public:
 private:
 	
 	int length;
-    char *addr;
+    char *m_srcMemAddr;
 
 	struct v4l2_format m_v4l2_fmt;
 };

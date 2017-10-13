@@ -6,7 +6,7 @@
 IrayCameraData::IrayCameraData()
 {
 	length = 0;
-	addr = NULL;
+	m_srcMemAddr = NULL;
 }
 
 IrayCameraData::IrayCameraData(char *address, int len)
@@ -14,7 +14,7 @@ IrayCameraData::IrayCameraData(char *address, int len)
 	memset(&m_v4l2_fmt, 0x00, sizeof(struct v4l2_format));
 
 	length = len;
-	addr = address;
+	m_srcMemAddr = address;
 }
 
 IrayCameraData::~IrayCameraData()
@@ -29,7 +29,7 @@ void IrayCameraData::setLength(int len)
 
 void IrayCameraData::setAddr(char *address)
 {
-	addr = address;
+	m_srcMemAddr = address;
 }
 
 int IrayCameraData::getLength()
@@ -44,7 +44,7 @@ int IrayCameraData::getPixelByteCnt()
 
 char *IrayCameraData::getAddr()
 {
-	return addr;
+	return m_srcMemAddr;
 }
 
 void IrayCameraData::setFormat(struct v4l2_format *fmt)

@@ -94,10 +94,15 @@ int NetReceiver::sendFrameDataToSocket(IrayCameraData *frameData)
 		return -EPARAME;
 	}
 
-	if (frameData->getPixFmtType() == V4L2_PIX_FMT_UYVY) {
-		data_type = DATA_TYPE_IMG_FMT_UYVY;
-	} else {
-		data_type = DATA_TYPE_IMG_FMT_RAW;
+	switch (frameData->getPixFmtType())
+	{
+		case V4L2_PIX_FMT_YUYV:
+			data_type = DATA_TYPE_IMG_FMT_UYVY;
+			break;
+		default:
+			//iray_dbg("pix format type:%d\n", frameData->getPixFmtType());
+			data_type = DATA_TYPE_IMG_FMT_RAW;
+			break;
 	}
 
 	// write data type

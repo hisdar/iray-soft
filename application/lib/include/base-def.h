@@ -21,4 +21,12 @@
 #define ENODATA		7
 #endif
 
+#define ENOPARA		8
+
+#define CHECK_FREE(ptr) \
+	if (ptr == NULL) {  \
+		free(ptr);      \
+		ptr = NULL;     \
+	}
+
 #endif

@@ -36,9 +36,8 @@ void print_help_info()
 
 	printf("\t-fr : statistics frame rate\n");
 	printf("\t-show-frame-info [count]: show frame info\n");
-	
+	printf("\t-set-field [file type]: show frame info\n");
 }
-
 
 int start_net_camera(char *ip_addr, char *src_port)
 {
@@ -132,6 +131,28 @@ int show_frame_info(char * ptr_count)
 	return 0;
 }
 
+int set_field_type(char *argv[], int argc)
+{
+	int ret = 0;
+	int field_fmt = 0;
+	char * ptr_field_fmt = argv[2];
+	IrayCamera camera;
+
+	if (argc != 3) {
+		return -ENOPARA;
+	}
+
+	ret = sscanf(ptr_field_fmt, "%d", &field_fmt);
+	if (ret != 1) {
+		printf("parse count value fail, ret=%d, src=%s\n", ret, ptr_field_fmt);
+		return -EPARAME;
+	}
+
+	camera.setFieldType(field_fmt);
+	camera.startCapture(1, 1);
+	
+	return 0;
+}
 
 int save_to_raw_file(char *path, int count)
 {
@@ -173,6 +194,8 @@ int main(int argc, char *argv[])
 		statistics_frame_rate();
 	} else if (strcmp(argv[1], "-show-frame-info") == 0) {
 		show_frame_info(argv[2]);
+	} else if (strcmp(argv[1], "-set-field") == 0) {
+		set_field_type(argv, argc);
 	} else {
 		print_help_info();
 	}

@@ -12,7 +12,8 @@ LIB = $(HOME)/application/lib/src/IrayCamera.cpp \
 		$(HOME)/application/lib/src/NetReceiver.cpp \
 		$(HOME)/application/lib/src/IrayImageWriter.cpp \
 		$(HOME)/application/lib/src/IrayFrameRate.cpp \
-
+		$(HOME)/application/lib/src/IrayFbDisplay.cpp \
+		
 SRC = net-camera.cpp
 
 #CFLAGS = -O3 -Wall -std=c99

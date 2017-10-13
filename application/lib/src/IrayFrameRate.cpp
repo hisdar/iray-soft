@@ -1,6 +1,24 @@
 #include <unistd.h>
 #include <string.h>
+#include <linux/fb.h>
 #include <IrayFrameRate.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <linux/videodev2.h>
+#include <linux/fb.h>
+#include <stdio.h>
+#include <sys/types.h>  
+#include <sys/socket.h>  
+#include <netinet/in.h>  
+#include <arpa/inet.h>
 
 IrayFrameRate::IrayFrameRate(u32 timevalBufSize, u32 isPrint = 0)
 {
@@ -36,7 +54,7 @@ int IrayFrameRate::receiveFrame(IrayCameraData *frameData)
 {
 	int ret= 0;
 	struct timeval tv;
-	
+
 	ret = gettimeofday(&tv, NULL);
 	if (ret) {
 		iray_err("get time of day fail, ret=%d\n", ret);

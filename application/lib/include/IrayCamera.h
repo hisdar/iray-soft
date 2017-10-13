@@ -25,15 +25,6 @@
 
 #define CAMERA_PATH		"/dev/video1"
 
-//#define IMAGE_WIDTH 	1024
-//#define IMAGE_HEIGHT	768
-
-#define IMAGE_WIDTH 	640
-#define IMAGE_HEIGHT	480
-
-//#define IMAGE_WIDTH 	720
-//#define IMAGE_HEIGHT	576
-
 #define DEFAULT_BUFFER_SIZE		10
 
 typedef struct __v4l2_user_buffer {
@@ -57,8 +48,9 @@ public:
 	virtual int setParameter();
 
 	int startCapture(int count, u32 isPrintInfo = 0);
-
 	void setFrameReceiver(IrayCameraRcv *frameReceiver);
+
+	void setFieldType(u32 fieldType);
 
 private:
 	int streamOff();
@@ -76,17 +68,23 @@ private:
 	int getFormatDefault();
 
 	int printFrameInfo();
-	
-private:
-	u32 m_isPrintFrameInfo;
-	int m_cam_fd;
+	int notifyFrameData(v4l2_user_buffer *frameData);
+	void initFrameBuffer(v4l2_user_buffer *srcData);
 
-	IrayCameraRcv *frameReceiver;
+private:
+	u32 m_is_print_frame_info;
+	u32 m_field_type;
+	int m_cam_fd;
+		
+	IrayCameraRcv *m_frame_receiver;
+	IrayCameraData m_frame_data;
 
 	struct v4l2_format m_v4l2_fmt;
 	struct v4l2_buffer m_v4l2_buf;
 	struct v4l2_requestbuffers m_v4l2_req_bufs;
 	v4l2_user_buffer m_user_buffer[DEFAULT_BUFFER_SIZE];
+
+	v4l2_user_buffer m_frame_buf;
 };
 
 
