@@ -1,0 +1,25 @@
+CC = g++
+
+TAG = frame-buffer-test
+
+HOME = ../..
+
+#INC = -I $(HOME)/application/lib/include/
+
+#LIB = $(HOME)/application/test/fb/FrameBufferDev.cpp \
+		
+SRC = FrameBufferDev.cpp \
+		ImageWriter.cpp \
+		Bt656Merge.cpp \
+		IrayRgbImage.cpp \
+		main.cpp \
+		
+
+#CFLAGS = -O3 -Wall -std=c99
+CFLAGS = -O3 -Wall -ljpeg
+
+all:
+	@$(CC) $(SRC) -o $(TAG) $(CFLAGS)
+
+clean:
+	rm -rf $(TAG) *.o
