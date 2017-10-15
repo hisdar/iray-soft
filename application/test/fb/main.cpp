@@ -61,7 +61,8 @@ int test_all()
 
 	// create rgb image / yuv --> rgb		
 	IrayRgbImage rgbImage;
-	ret = rgbImage.createFromYUY2(bt656Merge.getData(), 640, 576, COLOR_TYPE_RGB);
+    rgbImage.create(640, 576, COLOR_TYPE_RGB);
+	ret = rgbImage.formatFromYUY2(bt656Merge.getData(), 640, 576);
 	if (ret) {
 		printf("create rgb image fail\n");
 		return ret;
@@ -69,10 +70,9 @@ int test_all()
 		printf("create rgb image success\n");
 	}
 
-
 	IrayRgbImage backImage;
 	backImage.create(1920, 1080, COLOR_TYPE_RGB);
-	backImage.draw(&rgbImage, 1280, 900);
+	backImage.draw(&rgbImage, 1480, 500);
 
 	gettimeofday(&end_tv, NULL);
 	printf("time[%lu.%lu]\n", end_tv.tv_sec - start_tv.tv_sec, end_tv.tv_usec - start_tv.tv_usec);
