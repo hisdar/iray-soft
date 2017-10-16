@@ -1,0 +1,23 @@
+CC = g++
+
+TAG = multi-thread-test
+
+HOME = ../..
+
+#INC = -I $(HOME)/application/lib/include/
+
+#LIB = $(HOME)/application/test/fb/FrameBufferDev.cpp \
+		
+SRC = IrayThread.cpp \
+		IrayClientThread.cpp \
+		main.cpp \
+		
+
+#CFLAGS = -O3 -Wall -std=c99
+CFLAGS = -O3 -Wall -ljpeg
+
+all:
+	@$(CC) $(SRC) -o $(TAG) $(CFLAGS)
+
+clean:
+	rm -rf $(TAG) *.o
