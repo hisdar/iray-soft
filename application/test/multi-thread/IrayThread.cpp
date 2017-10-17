@@ -249,6 +249,7 @@ int IrayThread::send(u32 data_type, char *data, u32 len)
             setShmDataLen(len);
             setShmData(data, len);
             setShmState(SHM_MEM_STATE_READY);
+            
             break;
         } else {
             usleep(3);
@@ -281,6 +282,7 @@ int IrayThread::getEvent(char *buf, u32 *data_type, u32 len)
             getShmData(buf, copy_len);
 
             setShmState(SHM_MEM_STATE_HANDLED);
+            
             break;
         } else {
             usleep(5);

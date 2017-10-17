@@ -79,10 +79,10 @@ int IrayRgbImage::init(u32 width, u32 height, COLOR_TYPE color_type, u8 is_alloc
     
     if (color_type == COLOR_TYPE_ARGB) {
         m_bytes_per_pix = 4;
-        m_a_idx = 0;
-        m_r_idx = 1;
-        m_g_idx = 2;
-        m_b_idx = 3;
+        m_a_idx = 3;
+        m_r_idx = 2;
+        m_g_idx = 1;
+        m_b_idx = 0;
     } else if (color_type == COLOR_TYPE_RGB) {
         m_bytes_per_pix = 3;
         m_a_idx = 0;
@@ -100,7 +100,7 @@ int IrayRgbImage::init(u32 width, u32 height, COLOR_TYPE color_type, u8 is_alloc
         int mem_len = width * height * m_bytes_per_pix;
         m_argb_buf = (char *)malloc(mem_len);
         if (m_argb_buf == NULL) {
-            printf("alloc mem fail\n");
+            iray_err("alloc mem fail\n");
             return -1;
         }
 
@@ -109,8 +109,6 @@ int IrayRgbImage::init(u32 width, u32 height, COLOR_TYPE color_type, u8 is_alloc
 
     return 0;
 }
-
-
 
 //I420是yuv420格式，是3个plane，排列方式为(Y)(U)(V)
 int IrayRgbImage::formatFromI420(char *src, u32 width, u32 height)
@@ -214,7 +212,7 @@ int IrayRgbImage::formatFromYV12(char *src, u32 width, u32 height)
 //YUY2是YUV422格式，排列是(YUYV)，是1 plane 
 int IrayRgbImage::formatFromYUY2(char *src, u32 width, u32 height)
 {
-    if (m_argb_buf == NULL) {
+    if (m_argb_buf == NULL || src == NULL) {
         return -ENOMEM;
     }
 
@@ -461,28 +459,31 @@ int IrayRgbImage::formatFromVYUY(char *src, u32 width, u32 height)
 }
 
 
-int IrayRgbImage::draw(IrayRgbImage *img, u32 x, u32 y)
+int IrayRgbImage::draw(IrayRgbImage *img, u32 x, u32 y, u32 hsync)
 {
     if (m_argb_buf == NULL) {
         return -ENOMEM;
     }
 
     if (x > m_width || y > m_height) {
-        printf("position out of bounds:width[%u], height[%u], x[%u], y[%u]\n", m_width, m_height, x, y);
+        iray_err("position out of bounds:width[%u], height[%u], x[%u], y[%u]\n",
+            m_width, m_height, x, y);
         return -1;
     }
 
     if (m_bytes_per_pix != img->getBytesPerPix()) {
-        printf("data format not match:cur[%u], src[%u]\n", m_bytes_per_pix, img->getBytesPerPix());
+        iray_err("data format not match:cur[%u], src[%u]\n",
+            m_bytes_per_pix, img->getBytesPerPix());
         return -2;
     }
 
-    u32 marge_left = x * m_bytes_per_pix;    
+    u32 marge_left   = x * m_bytes_per_pix;
+    u32 hsync_len    = hsync * m_bytes_per_pix;
     u32 tag_line_len = m_width * m_bytes_per_pix;
     u32 src_line_len = img->getWidth() * img->getBytesPerPix();
 
     u32 copy_line_len = src_line_len;
-    if (tag_line_len < copy_line_len + marge_left) {
+    if (copy_line_len + marge_left > tag_line_len) {
         copy_line_len = tag_line_len - marge_left;
     }
 
@@ -491,12 +492,28 @@ int IrayRgbImage::draw(IrayRgbImage *img, u32 x, u32 y)
         copy_height = m_height - y;
     }
 
-    char *tag_addr = m_argb_buf + y * tag_line_len + x * m_bytes_per_pix;
+    char *tag_addr = m_argb_buf + ((y * (tag_line_len + hsync_len)) + marge_left);
     char *src_addr = img->getData();
+
+#if 0
+    printf("Image draw debug info\n");
+    printf("x              :[%u]\n", x);
+    printf("y              :[%u]\n", y);
+    printf("m_width        :[%u]\n", m_width);
+    printf("m_height       :[%u]\n", m_height);
+    printf("m_bytes_per_pix:[%u]\n", m_bytes_per_pix);
+
+    printf("marge_left     :[%u]\n", marge_left);
+    printf("copy_line_len  :[%u]\n", copy_line_len);
+    printf("tag_line_len   :[%u]\n", tag_line_len);
+    printf("src_line_len   :[%u]\n", src_line_len);
+#endif
+
     for (u32 i = 0; i < copy_height; i++) {
         memcpy(tag_addr, src_addr, copy_line_len);
-        tag_addr += tag_line_len;
+        tag_addr += tag_line_len + hsync_len;
         src_addr += src_line_len;
+        
     }
 
     return 0;

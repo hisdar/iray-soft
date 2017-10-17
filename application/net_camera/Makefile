@@ -12,7 +12,9 @@ LIB = $(HOME)/application/lib/src/IrayCamera.cpp \
 		$(HOME)/application/lib/src/NetReceiver.cpp \
 		$(HOME)/application/lib/src/IrayImageWriter.cpp \
 		$(HOME)/application/lib/src/IrayFrameRate.cpp \
-		$(HOME)/application/lib/src/IrayFbDisplay.cpp \
+		$(HOME)/application/lib/src/FrameBufferDev.cpp \
+		$(HOME)/application/lib/src/IrayRgbImage.cpp \
+		$(HOME)/application/lib/src/Bt656Merge.cpp \
 		
 SRC = net-camera.cpp
 

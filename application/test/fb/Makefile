@@ -4,14 +4,11 @@ TAG = frame-buffer-test
 
 HOME = ../..
 
-#INC = -I $(HOME)/application/lib/include/
-
-#LIB = $(HOME)/application/test/fb/FrameBufferDev.cpp \
-		
 SRC = FrameBufferDev.cpp \
-		main.cpp
-
-#CFLAGS = -O3 -Wall -std=c99
+		Bt656Merge.cpp \
+		IrayRgbImage.cpp \
+		main.cpp \
+		
 CFLAGS = -O3 -Wall
 CFLAGS += -Wl,-rpath-link,../../../linux-devkit/sysroots/cortexa15hf-neon-linux-gnueabi/usr/lib \
 		  -Wl,-rpath-link,../../../linux-devkit/sysroots/cortexa15hf-neon-linux-gnueabi/lib \
@@ -22,7 +19,6 @@ CFLAGS += -lpthread -lasound -lrt
 
 all:
 	@$(CC) $(SRC) -o $(TAG) $(CFLAGS)
-	#@$(CC) $(INC) $(LIB) $(SRC) -o $(TAG) $(CFLAGS)
 
 clean:
 	rm -rf $(TAG) *.o

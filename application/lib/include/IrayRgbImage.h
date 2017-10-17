@@ -2,13 +2,8 @@
 #define _IRAY_RGB_IMAGE_H_
 
 #include <string.h>
+#include <base-def.h>
 #include "Bt656Merge.h"
-
-#define CHECK_FREE(ptr) \
-    if (ptr != NULL) { \
-        free(ptr); \
-        ptr = NULL; \
-    }
 
 #ifndef u32
 #define u32 unsigned int
@@ -69,7 +64,7 @@ public:
     int formatFromYV16(char * src, u32 width, u32 height);
     int formatFromYVYU(char * src, u32 width, u32 height);
 
-    int draw(IrayRgbImage *img, u32 x, u32 y);
+    int draw(IrayRgbImage *img, u32 x, u32 y, u32 hsync = 0);
     int save(const char *path, IMG_TYPE img_type);
     
     char *getData();

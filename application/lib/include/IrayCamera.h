@@ -9,20 +9,6 @@
 #include <IrayCameraData.h>
 #include <IrayCameraControler.h>
 
-#define IRAY_DEBUG
-
-#ifdef IRAY_DEBUG
-#define iray_dbg(fmt, arg...)	\
-        printf("%s%s-%d:" fmt , "[Iray][dbg]", __func__, __LINE__, ##arg)
-#else
-#define iray_dbg(fmt, arg...)
-#endif
-
-#define iray_err(fmt, arg...)	\
-        printf("%s%s-%d:" fmt , "[Iray][err]", __func__, __LINE__, ##arg)
-#define iray_info(fmt, arg...)	\
-        printf("%s%s-%d:" fmt , "[Iray][inf]", __func__, __LINE__, ##arg)
-
 #define CAMERA_PATH		"/dev/video1"
 
 #define DEFAULT_BUFFER_SIZE		10
@@ -69,7 +55,7 @@ private:
 
 	int printFrameInfo();
 	int notifyFrameData(v4l2_user_buffer *frameData);
-	void initFrameBuffer(v4l2_user_buffer *srcData);
+	int initFrameBuffer(v4l2_user_buffer *srcData);
 
 private:
 	u32 m_is_print_frame_info;

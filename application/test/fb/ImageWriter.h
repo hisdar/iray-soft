@@ -8,6 +8,5 @@ void saveBitmap(const char *file_path, unsigned char *pData, int width, int heig
 
 
 int write_jpeg_file(const char* jpeg_file, unsigned char* rgb_buffer, int width, int height, int quality);
-int read_uyvy_file(const char *file_path, char *data, int data_len);
 
 #endif
