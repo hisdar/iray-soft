@@ -2,24 +2,24 @@ CC = g++
 
 TAG = frame-buffer-test
 
-HOME = ../..
+HOME = ../../..
 
-#INC = -I $(HOME)/application/lib/include/
+INC = -I $(HOME)/application/lib/include/
 
-#LIB = $(HOME)/application/test/fb/FrameBufferDev.cpp \
+LIB = $(HOME)/application/lib/src/FrameBufferDev.cpp \
+	$(HOME)/application/lib/src/IrayRgbImage.cpp \
+	$(HOME)/application/lib/src/Bt656Merge.cpp \
+	$(HOME)/application/lib/src/IrayCameraData.cpp \
 		
-SRC = FrameBufferDev.cpp \
-		ImageWriter.cpp \
-		Bt656Merge.cpp \
-		IrayRgbImage.cpp \
-		main.cpp \
+SRC = main.cpp
 		
 
 #CFLAGS = -O3 -Wall -std=c99
 CFLAGS = -O3 -Wall -ljpeg
+CFLAGS += -lpthread -lrt
 
 all:
-	@$(CC) $(SRC) -o $(TAG) $(CFLAGS)
+	@$(CC) $(INC) $(LIB) $(SRC) -o $(TAG) $(CFLAGS)
 
 clean:
 	rm -rf $(TAG) *.o

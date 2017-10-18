@@ -49,6 +49,7 @@ public:
     IrayRgbImage(u32 width, u32 height, COLOR_TYPE color_type);
     ~IrayRgbImage();
 
+    int release();
     int create(u32 width, u32 height, COLOR_TYPE color_type);
     int createFromExternalMem(char *external_mem_addr, u32 width, u32 height, COLOR_TYPE color_type);
 
@@ -64,7 +65,7 @@ public:
     int formatFromYV16(char * src, u32 width, u32 height);
     int formatFromYVYU(char * src, u32 width, u32 height);
 
-    int draw(IrayRgbImage *img, u32 x, u32 y, u32 hsync = 0);
+    int draw(IrayRgbImage *img, u32 x, u32 y);//, u32 hsync = 0);
     int save(const char *path, IMG_TYPE img_type);
     
     char *getData();

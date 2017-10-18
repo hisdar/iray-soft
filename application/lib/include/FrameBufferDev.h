@@ -8,7 +8,7 @@
 #define SUCCESS 0
 
 #ifndef ENODEV
-#define ENODEV    1
+#define ENODEV	1
 #endif
 
 #ifndef u32
@@ -18,26 +18,30 @@
 class FrameBufferDev : public IrayCameraRcv {
 
 public:
-    FrameBufferDev();
-    ~FrameBufferDev();
+	FrameBufferDev();
+	~FrameBufferDev();
 
-    int open(const char *dev_path);
-    int showScreenInfo();
-    int prepareOutput();
-    int outputImage(IrayRgbImage *img, int x, int y, int pix);
-    
-    int receiveFrame(IrayCameraData *frameData);
+	int open(const char *dev_path);
+	int showScreenInfo();
+	int prepareOutput();
+	int setFrameSize(u32 width, u32 height);
+	int outputImage(IrayRgbImage *img, int x, int y);
+	
+	int receiveFrame(IrayCameraData *frameData);
 private:
-    int m_fb;
-    u32 m_fb_buf_len;
-    char *m_fb_mem_addr;
-    
-    struct fb_fix_screeninfo m_fix;
-    struct fb_var_screeninfo m_var;
-    struct fb_con2fbmap      m_con;
+	int m_fb;
+	u32 m_fb_buf_len;
+	char *m_fb_mem_addr;
 
-    int queryScreenInfo();
-    int prepare_output();
+	IrayRgbImage m_src_img;
+	IrayRgbImage m_fb_img;
+
+	struct fb_fix_screeninfo m_fix;
+	struct fb_var_screeninfo m_var;
+	struct fb_con2fbmap	  m_con;
+
+	int queryScreenInfo();
+	int prepare_output();
 };
 
 #endif

@@ -153,7 +153,7 @@ int test_all(int argc, char *argv[])
     fb_dev.prepareOutput();
     IrayRgbImage whiteImg;
 //    whiteImg.create(1920, 1080, COLOR_TYPE_ARGB);
-    fb_dev.outputImage(&rgbImage, x, y, 128);
+    fb_dev.outputImage(&rgbImage, x, y);
 
     free(top_img);
     free(bottom_img);

@@ -47,9 +47,7 @@ IrayRgbImage::IrayRgbImage(u32 width, u32 height, COLOR_TYPE color_type)
 
 IrayRgbImage::~IrayRgbImage()
 {
-    if (!m_is_use_external_mem) {
-        CHECK_FREE(m_argb_buf);
-    }
+    release();
 }
 
 int IrayRgbImage::create(u32 width, u32 height, COLOR_TYPE color_type)
@@ -106,6 +104,26 @@ int IrayRgbImage::init(u32 width, u32 height, COLOR_TYPE color_type, u8 is_alloc
 
         memset(m_argb_buf, 0x00, mem_len);
     }
+
+    return 0;
+}
+
+int IrayRgbImage::release()
+{
+    if (!m_is_use_external_mem) {
+        CHECK_FREE(m_argb_buf);
+    }
+
+    m_is_use_external_mem = FALSE;
+    m_r_idx = 0;
+    m_g_idx = 0;
+    m_b_idx = 0;
+    m_a_idx = 0;
+    
+    m_width  = 0;
+    m_height = 0;
+    
+    m_bytes_per_pix = 0;
 
     return 0;
 }
@@ -459,7 +477,7 @@ int IrayRgbImage::formatFromVYUY(char *src, u32 width, u32 height)
 }
 
 
-int IrayRgbImage::draw(IrayRgbImage *img, u32 x, u32 y, u32 hsync)
+int IrayRgbImage::draw(IrayRgbImage *img, u32 x, u32 y)//, u32 hsync)
 {
     if (m_argb_buf == NULL) {
         return -ENOMEM;
@@ -478,7 +496,7 @@ int IrayRgbImage::draw(IrayRgbImage *img, u32 x, u32 y, u32 hsync)
     }
 
     u32 marge_left   = x * m_bytes_per_pix;
-    u32 hsync_len    = hsync * m_bytes_per_pix;
+    //u32 hsync_len    = hsync * m_bytes_per_pix;
     u32 tag_line_len = m_width * m_bytes_per_pix;
     u32 src_line_len = img->getWidth() * img->getBytesPerPix();
 
@@ -492,7 +510,8 @@ int IrayRgbImage::draw(IrayRgbImage *img, u32 x, u32 y, u32 hsync)
         copy_height = m_height - y;
     }
 
-    char *tag_addr = m_argb_buf + ((y * (tag_line_len + hsync_len)) + marge_left);
+    //char *tag_addr = m_argb_buf + ((y * (tag_line_len + hsync_len)) + marge_left);
+    char *tag_addr = m_argb_buf + ((y * tag_line_len) + marge_left);
     char *src_addr = img->getData();
 
 #if 0
@@ -511,7 +530,7 @@ int IrayRgbImage::draw(IrayRgbImage *img, u32 x, u32 y, u32 hsync)
 
     for (u32 i = 0; i < copy_height; i++) {
         memcpy(tag_addr, src_addr, copy_line_len);
-        tag_addr += tag_line_len + hsync_len;
+        tag_addr += tag_line_len; // + hsync_len;
         src_addr += src_line_len;
         
     }
@@ -581,7 +600,7 @@ int IrayRgbImage::saveBitMap(const char *file_path)
 void IrayRgbImage::yuvTorgb(u8 Y, u8 U, u8 V, RGB *rgb)
 {
 
-    int r = 0, g = 0, b = 0;
+    /*int r = 0, g = 0, b = 0;
     
     r = (int)((Y & 0xff) + 1.4075 * ((V & 0xff) - 128));  
     g = (int)((Y & 0xff) - 0.3455 * ((U & 0xff) - 128) - 0.7169 * ((V & 0xff) - 128));  
@@ -589,7 +608,10 @@ void IrayRgbImage::yuvTorgb(u8 Y, u8 U, u8 V, RGB *rgb)
 
     rgb->red   = (u8)(r < 0 ? 0 : r > 255 ? 255 : r);  
     rgb->green = (u8)(g < 0 ? 0 : g > 255 ? 255 : g);  
-    rgb->blue  = (u8)(b < 0 ? 0 : b > 255 ? 255 : b);
+    rgb->blue  = (u8)(b < 0 ? 0 : b > 255 ? 255 : b);*/
+    rgb->red = Y;
+	rgb->green = Y;
+	rgb->blue = Y;
 }
 
 void IrayRgbImage::setColor(char *addr, RGB *rgb)
