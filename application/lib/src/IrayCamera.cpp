@@ -159,15 +159,15 @@ int IrayCamera::getFormatDefault()
 		return ret;
 	}
 
-	iray_dbg("fmt width	   : [%u]\n", m_v4l2_fmt.fmt.pix.width);
-	iray_dbg("fmt height	  : [%u]\n", m_v4l2_fmt.fmt.pix.height);
+	iray_dbg("fmt width       : [%u]\n", m_v4l2_fmt.fmt.pix.width);
+	iray_dbg("fmt height      : [%u]\n", m_v4l2_fmt.fmt.pix.height);
 	iray_dbg("fmt pixelformat : [%u]\n", m_v4l2_fmt.fmt.pix.pixelformat);
-	iray_dbg("fmt field	   : [%u]\n", m_v4l2_fmt.fmt.pix.field);
+	iray_dbg("fmt field       : [%u]\n", m_v4l2_fmt.fmt.pix.field);
 	iray_dbg("fmt bytesperline: [%u]\n", m_v4l2_fmt.fmt.pix.bytesperline);
 	iray_dbg("fmt sizeimage   : [%u]\n", m_v4l2_fmt.fmt.pix.sizeimage);
 	iray_dbg("fmt colorspace  : [%u]\n", m_v4l2_fmt.fmt.pix.colorspace);
-	iray_dbg("fmt priv		: [%u]\n", m_v4l2_fmt.fmt.pix.priv);
-	iray_dbg("fmt flags	   : [%u]\n", m_v4l2_fmt.fmt.pix.flags);
+	iray_dbg("fmt priv        : [%u]\n", m_v4l2_fmt.fmt.pix.priv);
+	iray_dbg("fmt flags       : [%u]\n", m_v4l2_fmt.fmt.pix.flags);
 	iray_dbg("fmt ycbcr_enc   : [%u]\n", m_v4l2_fmt.fmt.pix.ycbcr_enc);
 	iray_dbg("fmt quantization: [%u]\n", m_v4l2_fmt.fmt.pix.quantization);
 	iray_dbg("fmt xfer_func   : [%u]\n", m_v4l2_fmt.fmt.pix.xfer_func);

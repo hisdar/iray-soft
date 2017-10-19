@@ -120,6 +120,12 @@ int test_all(int argc, char *argv[])
         printf("create rgb image success\n");
     }
 
+	FILE *file = fopen("./yuv.bin", "wb+");
+	if (file != NULL) {
+		fwrite(bt656Merge.getData(), data_len, 1, file);
+		fclose(file);
+	}
+
     IrayRgbImage backImage;
     backImage.create(1920, 1080, COLOR_TYPE_ARGB);
     backImage.draw(&rgbImage, 640, 252);
