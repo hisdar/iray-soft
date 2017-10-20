@@ -1,0 +1,21 @@
+CC = g++
+
+TAG = test-parameter
+
+HOME = ../..
+
+INC = -I $(HOME)/include/
+
+LIB = $(HOME)/src/common/*.cpp
+		
+SRC = TestParameter.cpp
+
+CFLAGS = -O3 -Wall
+CFLAGS += -lpthread -lrt
+
+all:
+	@$(CC) $(INC) $(LIB) $(SRC) -o $(TAG) $(CFLAGS)
+
+clean:
+	rm -rf $(TAG) *.o
+

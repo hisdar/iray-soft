@@ -7,10 +7,6 @@
 
 #define SUCCESS 0
 
-#ifndef ENODEV
-#define ENODEV	1
-#endif
-
 #ifndef u32
 #define u32 unsigned int
 #endif

@@ -1,22 +1,14 @@
 CC = arm-linux-gnueabihf-g++
 
-TAG = net-camera
+TAG = iray-camera
 
-HOME = ../..
+HOME = .
 
-INC = -I $(HOME)/application/lib/include/
+INC = -I $(HOME)/include/
 
-LIB = $(HOME)/application/lib/src/IrayCamera.cpp \
-		$(HOME)/application/lib/src/IrayCameraData.cpp \
-		$(HOME)/application/lib/src/IrayCameraControler.cpp \
-		$(HOME)/application/lib/src/NetReceiver.cpp \
-		$(HOME)/application/lib/src/IrayImageWriter.cpp \
-		$(HOME)/application/lib/src/IrayFrameRate.cpp \
-		$(HOME)/application/lib/src/FrameBufferDev.cpp \
-		$(HOME)/application/lib/src/IrayRgbImage.cpp \
-		$(HOME)/application/lib/src/Bt656Merge.cpp \
+LIB = $(HOME)/src/*.cpp
 		
-SRC = net-camera.cpp
+SRC = iray-camera.cpp
 
 #CFLAGS = -O3 -Wall -std=c99
 CFLAGS = -O3 -Wall

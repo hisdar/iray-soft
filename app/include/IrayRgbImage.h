@@ -9,10 +9,6 @@
 #define u32 unsigned int
 #endif
 
-#ifndef u8
-#define u8 unsigned char
-#endif
-
 #ifndef TRUE
 #define TRUE 1
 #endif

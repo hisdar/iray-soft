@@ -1,6 +1,12 @@
 #ifndef __BASE_DEF_H__
 #define __BASE_DEF_H__
 
+#include <stdio.h>
+
+#ifndef u8
+#define u8 unsigned char
+#endif
+
 #ifndef u32
 #define u32 unsigned int
 #endif
@@ -25,13 +31,15 @@
 
 #define ENOWRITE	9
 
+#ifndef ENODEV
+#define ENODEV		10
+#endif
+
 #define CHECK_FREE(ptr) \
 	if (ptr != NULL) {  \
-		free(ptr);	  \
-		ptr = NULL;	 \
+		free(ptr);      \
+		ptr = NULL;     \
 	}
-
-
 	
 #define IRAY_DEBUG
 	
@@ -46,5 +54,7 @@
 			printf("%s%s-%d:" fmt , "[Iray][err]", __func__, __LINE__, ##arg)
 #define iray_info(fmt, arg...)	\
 			printf("%s%s-%d:" fmt , "[Iray][inf]", __func__, __LINE__, ##arg)
+
+
 
 #endif
