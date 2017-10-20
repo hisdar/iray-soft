@@ -112,8 +112,9 @@ int describeFormat(char *format, int width, int height, iray_fmt *fmt)
 	return 0;
 }
 
-int s_fmt(int type, iray_fmt &iray_fmt)
+int s_fmt(int type, iray_fmt &iray_fmt, int   interlace)
 {
+	int ret = 0;
 	struct v4l2_format fmt;
 	bzero(&fmt, sizeof(fmt));
 	fmt.type		= type;
@@ -146,8 +147,9 @@ int s_fmt(int type, iray_fmt &iray_fmt)
 	return 0;
 }
 
-s_selection()
+int s_selection()
 {
+	int ret = 0;
 	struct	v4l2_selection selection;
 
 	selection.r.top = selection.r.left = 0;
@@ -156,32 +158,20 @@ s_selection()
 	selection.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
 	selection.target = V4L2_SEL_TGT_CROP_ACTIVE;
 
-}
-
-int allocBuffers(
-	int   type,
-	void *base[],
-	void *base_uv[],
-	int  *numbuf,
-	int   interlace,
-	struct	v4l2_selection s,
-	iray_fmt &iray_fmt)
-{
-	
-	struct v4l2_requestbuffers	reqbuf;
-	struct v4l2_buffer		buffer;
-	struct v4l2_plane		buf_planes[2];
-	int				i = 0;
-	int				ret = -1;
-
-	s_fmt(iray_fmt);
-
-	if (s.type == V4L2_BUF_TYPE_VIDEO_OUTPUT) {
-		ret = ioctl(fd, VIDIOC_S_SELECTION, &s);
+	if (selection.type == V4L2_BUF_TYPE_VIDEO_OUTPUT) {
+		ret = ioctl(fd, VIDIOC_S_SELECTION, &selection);
 		if (ret < 0)
 			pexit("error setting selection\n");
 	}
 
+	return 0;
+}
+
+int reqbufs(int *numbuf, int type)
+{
+	int ret = 0;
+
+	struct v4l2_requestbuffers	reqbuf;
 	bzero(&reqbuf, sizeof(reqbuf));
 	reqbuf.count	= *numbuf;
 	reqbuf.type	= type;
@@ -194,18 +184,51 @@ int allocBuffers(
 		*numbuf = reqbuf.count;
 	}
 
+	return 0;
+}
+
+int querybuf(int index, int type, iray_fmt &iray_fmt)
+{
+	int ret = 0;
+	struct v4l2_buffer		buffer;
+	struct v4l2_plane		buf_planes[2];
+
+	memset(&buffer, 0, sizeof(buffer));
+	buffer.type	= type;
+	buffer.memory	= V4L2_MEMORY_MMAP;
+	buffer.index	= index;
+	buffer.m.planes	= buf_planes;
+	buffer.length	= iray_fmt.num_planes;
+
+	ret = ioctl(fd, VIDIOC_QUERYBUF, &buffer);
+	if (ret < 0)
+		pexit("Cant query buffers\n");
+
+	return 0;
+}
+
+int allocBuffers(
+	int   type,
+	void *base[],
+	void *base_uv[],
+	int  *numbuf,
+	int   interlace,
+	struct	v4l2_selection s,
+	iray_fmt &iray_fmt)
+{
+	struct v4l2_buffer		buffer;
+
+	int				i = 0;
+
+	s_fmt(type, iray_fmt, interlace);
+
+	s_selection();
+
+	reqbufs(numbuf, type);
+
 	for (i = 0; i < *numbuf; i++) {
-		memset(&buffer, 0, sizeof(buffer));
-		buffer.type	= type;
-		buffer.memory	= V4L2_MEMORY_MMAP;
-		buffer.index	= i;
-		buffer.m.planes	= buf_planes;
-		buffer.length	= iray_fmt.num_planes;
 
-		ret = ioctl(fd, VIDIOC_QUERYBUF, &buffer);
-		if (ret < 0)
-			pexit("Cant query buffers\n");
-
+		querybuf(i, type, iray_fmt);
 		printf("query buf, plane 0 = %d\n",
 		       buffer.m.planes[0].length);
 		if (iray_fmt.num_planes == 2)
@@ -461,7 +484,6 @@ int main(int argc, char *argv[])
 	int	dst_numbuf = 6;
 	int	num_frames = 20;
 	int	interlace = 0;
-	int	translen = 3;
 	int	frame_no = 0;
 	struct	v4l2_control ctrl;
 	struct	v4l2_selection selection;
@@ -498,7 +520,6 @@ int main(int argc, char *argv[])
 
 	init_selection(selection);
 	interlace = 0;
-	translen = 3;
 
 	/** Open input file in read only mode */
 	fin = open(srcfile, O_RDONLY);
@@ -547,7 +568,8 @@ int main(int argc, char *argv[])
 
 	vpe.open();
 
-	vpe.s_ctrl();
+	int translen = 3; // from command line
+	vpe.s_ctrl(translen);
 
 	ret = allocBuffers(V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE,
 		srcBuffers, srcBuffers_uv, &src_numbuf, interlace, selection,
@@ -621,21 +643,15 @@ int main(int argc, char *argv[])
 		if (!(interlace && frame_no <= 2)) {
 			/* Wait for and dequeue one buffer from OUTPUT
 			 * to write data for next interlaced field */
-			dequeue(V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, &buf,
-				buf_planes);
-			dprintf("dequeued source buffer with index %d\n",
-				buf.index);
+			dequeue(V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, &buf, buf_planes);
+			dprintf("dequeued source buffer with index %d\n", buf.index);
 
 			if (!last) {
-				do_read("Y plane", fin, srcBuffers[buf.index],
-					src_fmt.size);
+				do_read("Y plane", fin, srcBuffers[buf.index], src_fmt.size);
 				if (src_fmt.num_planes == 2)
-					do_read("UV plane", fin,
-						srcBuffers_uv[buf.index],
-						srcSize_uv);
+					do_read("UV plane", fin, srcBuffers_uv[buf.index], srcSize_uv);
 
-				queue(V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE,
-				      buf.index, field, src_fmt.size, srcSize_uv);
+				queue(V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, buf.index, field, src_fmt.size, srcSize_uv);
 				if (field == V4L2_FIELD_TOP)
 					field = V4L2_FIELD_BOTTOM;
 				else if (field == V4L2_FIELD_BOTTOM)
