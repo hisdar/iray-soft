@@ -433,18 +433,20 @@ static void usage(void)
 	printf("%s\n", localusage);
 }
 
+#define MAX_PIX_FMT_NAME_LEN 8
+
 struct cmd_line_parameter {
-	char dev_path;
-	char input_file;
-	char output_file;
+	char dev_path[MAX_PARAMETER_NAME];
+	char input_file[MAX_PARAMETER_NAME];
+	char output_file[MAX_PARAMETER_NAME];
+	int  input_pix_fmt[MAX_PIX_FMT_NAME_LEN];
+	int  output_pix_fmt[MAX_PIX_FMT_NAME_LEN];
+	int  field;
+	int  num_buffs;
+	int  debug_flag;
+	Rect rect;
 	Dimensions input_size;
 	Dimensions output_size;
-	int input_pix_fmt;
-	int output_pix_fmt;
-	Rect rect;
-	int field;
-	int num_buffs;
-	int debug_flag;
 };
 
 int init_parameters(int argc, char *argv[], struct cmd_line_parameter *parameter)
@@ -458,8 +460,53 @@ int init_parameters(int argc, char *argv[], struct cmd_line_parameter *parameter
 		return ret;
 	}
 
+	// parse device path
+	p.getValueByNameDefault("-d", parameter->dev_path, MAX_PARAMETER_NAME, "/dev/video0");
+
+	ret = p.getValueByName("-i", parameter->input_file, MAX_PARAMETER_NAME);
+	if (ret) {
+		return ret;
+	}
+
+	ret = p.getValueByName("-o", parameter->output_file, MAX_PARAMETER_NAME);
+	if (ret) {
+		return ret;
+	}
+
+	ret = p.getValueByName("-k", parameter->input_pix_fmt, MAX_PIX_FMT_NAME_LEN);
+	if (ret) {
+		return ret;
+	}
 	
+	ret = p.getValueByName("-q", parameter->output_pix_fmt, MAX_PIX_FMT_NAME_LEN);
+	if (ret) {
+		return ret;
+	}
 	
+	string srcSizePtr = p.getValueByName(string("-j"));
+	parseSize(srcSizePtr, parameter->input_size);
+
+	string dstSizePtr = p.getValueByName(string("-p"));
+	parseSize(dstSizePtr, parameter->output_size);
+
+	string rectPtr = p.getValueByName(string("-c"));
+	if (rectPtr.size() >= 0) {
+		parseSelection(string ptr, parameter->rect);
+	}
+
+	parameter->field      = p.getIntByNameDefault("-l", 0);
+	parameter->num_buffs  = p.getIntByNameDefault("-t", 1);
+	parameter->debug_flag = p.getIntByNameDefault("-v", 0);
+
+	return SUCCESS;
+}
+
+void parseSelection(string ptr, Rect rect)
+{
+	int index = ptr.find(',');
+	for (int i = 0; i < 3 && index > 0; i++) {
+		
+	}
 }
 
 

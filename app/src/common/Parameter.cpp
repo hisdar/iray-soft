@@ -114,4 +114,46 @@ string Parameter::getValueByName(string name)
 	return string("");
 }
 
+int Parameter::getValueByName(const char *name, char *value, int len)
+{
+	string val_ptr = getValueByName(string(name));
+	if (val_ptr.size() > 0) {
+		strncpy(value, val_ptr.data(), len - 1);
+		return 0;
+	}
+
+	return -ENODATA;
+}
+
+void Parameter::getValueByNameDefault(const char *name, char *value, int len, const char *def_value)
+{
+	string val_ptr = getValueByName(string(name));
+	if (val_ptr.size() > 0) {
+		strncpy(value, val_ptr.data(), len - 1);
+	} else {
+		strncpu(value, def_value, len - 1);
+	}
+}
+
+int Parameter::stringToInt(string str)
+{
+	int value;
+
+	istringstream cinstr(str);
+	cinstr >> value;
+
+	return value;
+}
+
+
+int Parameter::getIntByNameDefault(const char *name, int def_val)
+{
+	string val_ptr = getValueByName(string(name));
+	if (val_ptr.size() <= 0) {
+		return def_val;
+	}
+
+	return stringToInt(val_ptr);
+}
+
 

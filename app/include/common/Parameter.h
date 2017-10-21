@@ -24,8 +24,13 @@ public:
 	void copy(Parameter &dst, const Parameter &src);
 
 	string getValueByName(string name);
+	int getValueByName(const char *name, char *value, int len);
+	void getValueByNameDefault(const char *name, char *value, int len, const char *def_value);
+	int getIntByNameDefault(const char *name, int def_val);
 	ParameterItem getParameterItemAt(u32 index) const;
 	u32 size() const;
+	int stringToInt(string str);
+
 	Parameter & operator =(const Parameter &pItem);
 
 private:

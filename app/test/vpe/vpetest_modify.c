@@ -227,7 +227,6 @@ enum v4l2_colorspace src_colorspace;
 struct v4l2_selection selection;
 
 
-int	srcFourcc;
 int dstFourcc = 0;
 
 int dst_s_fmt()
@@ -374,9 +373,7 @@ int dst_query_buf(int index, struct v4l2_buffer &buffer)
 }
 
 // capture
-int allocDstBuffers(
-	void	*base[][],
-	)
+int allocDstBuffers(void *base[][])
 {
 
 	struct v4l2_requestbuffers	reqbuf;
@@ -419,8 +416,7 @@ error:
 }
 
 // output
-int allocSrcBuffers(
-	void *base[][])
+int allocSrcBuffers(void *base[][])
 {
 	struct v4l2_buffer		buffer;
 	struct v4l2_plane		buf_planes[2];
@@ -458,10 +454,7 @@ error:
 	return 1;
 }
 
-void releaseBuffers(
-	void	*base[],
-	int	numbuf,
-	int	bufsize)
+void releaseBuffers(void	*base[],int	numbuf, int	bufsize)
 {
 	while (numbuf > 0) {
 		numbuf--;
@@ -558,7 +551,7 @@ void streamOFF(int type)
 		pexit("Cant Stream on\n");
 }
 
-void do_read(const char *str, int fd, void *addr, int size)
+void do_read(int fd, void *addr, int size)
 {
 	int nbytes = size, ret = 0, val;
 	do {
@@ -568,17 +561,9 @@ void do_read(const char *str, int fd, void *addr, int size)
 			break;
 		ret = read(fd, addr, nbytes);
 	} while (ret > 0);
-
-	if (ret < 0) {
-		val = errno;
-		printf("Reading failed %s: %d %s\n", str, ret, strerror(val));
-		exit(1);
-	} else {
-		dprintf("Total bytes read %s = %d\n", str, size);
-	}
 }
 
-void do_write(const char *str, int fd, void *addr, int size)
+void do_write(int fd, void *addr, int size)
 {
 	int nbytes = size, ret = 0, val;
 	do {
@@ -588,13 +573,6 @@ void do_write(const char *str, int fd, void *addr, int size)
 			break;
 		ret = write(fd, addr, nbytes);
 	} while (ret > 0);
-	if (ret < 0) {
-		val = errno;
-		printf("Writing failed %s: %d %s\n", str, ret, strerror(val));
-		exit(1);
-	} else {
-		dprintf("Total bytes written %s = %d\n", str, size);
-	}
 }
 
 static void usage(void)
@@ -770,8 +748,8 @@ int main(int argc, char *argv[])
 
 	char dstFmt[30];
 
-	void	*srcBuffers[6][2];
-	void	*dstBuffers[6][2];
+	void *srcBuffers[6][2];
+	void *dstBuffers[6][2];
 
 	int	num_frames = 20;
 
@@ -877,9 +855,10 @@ int main(int argc, char *argv[])
 		break;
 	}
 
+	// 先把输出队列（src）放满，让vpe解析
 	for (i = 0; i < src_numbuf && i < num_frames; i++) {
 		for (int j = 0; j < src_num_planes; j++) {
-			do_read("Y plane", fin, srcBuffers[i][j], src_fmt.fmt.pix_mp.plane_fmt[j].sizeimage);
+			do_read(fin, srcBuffers[i][j], src_fmt.fmt.pix_mp.plane_fmt[j].sizeimage);
 		}
 		
 		queue(V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, i, field, src_num_planes);
@@ -897,11 +876,6 @@ int main(int argc, char *argv[])
 	streamON(V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE);
 	streamON(V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE);
 
-	if (!debug) {
-		printf("frames left %04d", num_frames);
-		fflush(stdout);
-	}
-
 	// 
 	while (num_frames) {
 		struct v4l2_buffer buf;
@@ -911,18 +885,22 @@ int main(int argc, char *argv[])
 
 		/* DEI: Do not Dequeue Source buffers immediately
 		 * De*interlacer keeps last two buffers in use */
-		if (!(interlace && frame_no <= 2)) {
+		if ((interlace && frame_no <= 2)) {
+		} else {
 			/* Wait for and dequeue one buffer from OUTPUT
 			 * to write data for next interlaced field */
 			 // 查询一个可以用的buf,拿来装数据，装好数据后又放回去
 			dequeue(V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, &buf, buf_planes);
 
+			// 如果当前是最后一张，那文件里面实际上已经没有数据可以读了？  
+			// 这完全不合逻辑啊
+			
 			if (!last) {
 				for (int i = 0; i < src_num_planes; i++) {
-					do_read("Y plane", fin, srcBuffers[buf.index][i], dst_fmt.fmt.pix_mp.plane_fmt[i].sizeimage);
+					do_read(fin, srcBuffers[buf.index][i], src_fmt.fmt.pix_mp.plane_fmt[i].sizeimage);
 				}
 				
-				queue(V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, buf.index, field, srcSize, srcSize_uv);
+				queue(V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, buf.index, field, src_num_planes);
 				if (field == V4L2_FIELD_TOP)
 					field = V4L2_FIELD_BOTTOM;
 				else if (field == V4L2_FIELD_BOTTOM)
@@ -930,13 +908,14 @@ int main(int argc, char *argv[])
 			}
 		}
 
+		// 对于奇偶行的数据来说，一次要读两个
 		while (iter--) {
 			/* Dequeue progressive frame from CAPTURE stream
 			 * write to the file and queue one empty buffer */
 			dequeue(V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, &buf, buf_planes);
 
 			for (int i = 0; i < dst_num_planes; i++) {
-				do_write("Y plane", fout, dstBuffers[buf.index][i], dst_fmt.fmt.pix_mp.plane_fmt[i].sizeimage);
+				do_write(fout, dstBuffers[buf.index][i], dst_fmt.fmt.pix_mp.plane_fmt[i].sizeimage);
 			}
 
 			if (!last)
