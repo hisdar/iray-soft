@@ -1,7 +1,7 @@
 #ifndef __IRAY_CAMERA_DATA_H__
 #define __IRAY_CAMERA_DATA_H__
 
-#include <base-def.h>
+#include <common/base-def.h>
 #include <linux/videodev2.h>
 
 class IrayCameraData {

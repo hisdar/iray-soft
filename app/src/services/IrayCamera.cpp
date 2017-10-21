@@ -9,7 +9,6 @@
 #include <malloc.h>
 #include <errno.h>
 
-#include "base-def.h"
 #include "IrayCamera.h"
 
 IrayCamera::IrayCamera()

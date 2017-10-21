@@ -2,7 +2,7 @@
 #define _IRAY_RGB_IMAGE_H_
 
 #include <string.h>
-#include <base-def.h>
+#include <common/base-def.h>
 #include "Bt656Merge.h"
 
 #ifndef u32

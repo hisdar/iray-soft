@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <linux/videodev2.h>
 
-#include <base-def.h>
+#include <common/base-def.h>
 #include <IrayCameraRcv.h>
 #include <IrayCameraData.h>
 #include <IrayCameraControler.h>
