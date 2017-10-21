@@ -38,7 +38,7 @@ int Vpe::open()
 	return SUCCESS;
 }
 
-int Vpe::s_ctrl()
+int Vpe::s_ctrl(int translen)
 {
 	int ret = 0;
 	struct v4l2_control ctrl;

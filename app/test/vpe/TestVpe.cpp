@@ -433,6 +433,36 @@ static void usage(void)
 	printf("%s\n", localusage);
 }
 
+struct cmd_line_parameter {
+	char dev_path;
+	char input_file;
+	char output_file;
+	Dimensions input_size;
+	Dimensions output_size;
+	int input_pix_fmt;
+	int output_pix_fmt;
+	Rect rect;
+	int field;
+	int num_buffs;
+	int debug_flag;
+};
+
+int init_parameters(int argc, char *argv[], struct cmd_line_parameter *parameter)
+{
+	int ret = 0;
+	Parameter p;
+
+	ret = p.parse(argc, argv);
+	if (ret) {
+		iray_err("p.parse fail, ret=%d\n", ret);
+		return ret;
+	}
+
+	
+	
+}
+
+
 void init_selection(struct v4l2_selection &selection)
 {
 

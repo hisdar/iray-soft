@@ -12,7 +12,7 @@ public:
 	int formatSwap(IrayImage &src, IrayImage &dst);
 	int open();
 
-	int s_ctrl();
+	int s_ctrl(int translen);
 
 private:
 
