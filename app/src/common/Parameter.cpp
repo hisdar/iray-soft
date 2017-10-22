@@ -1,5 +1,9 @@
+#include <string.h>
+#include <sstream>
 #include <common/Parameter.h>
 #include <common/ParameterItem.h>
+
+using namespace std;
 
 Parameter::Parameter()
 {
@@ -131,7 +135,7 @@ void Parameter::getValueByNameDefault(const char *name, char *value, int len, co
 	if (val_ptr.size() > 0) {
 		strncpy(value, val_ptr.data(), len - 1);
 	} else {
-		strncpu(value, def_value, len - 1);
+		strncpy(value, def_value, len - 1);
 	}
 }
 

@@ -11,6 +11,14 @@
 #define u32 unsigned int
 #endif
 
+#ifndef TRUE
+#define TRUE 1
+#endif
+
+#ifndef FALSE
+#define FALSE 0
+#endif
+
 #define SUCCESS		0
 #define ENOSOCK		1
 #define ENOCONN		2
