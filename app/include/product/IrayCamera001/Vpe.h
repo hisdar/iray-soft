@@ -56,7 +56,7 @@ public:
 	int initUserBuffer(struct v4l2_buffer_user & buf, int num_planes);
 	void releaseUserBuffer(struct v4l2_buffer_user &buf);
 	int initUserBuffers(struct v4l2_buffer_manager * buf_mag, int buf_len, int num_planes);
-	int initPixFmt(int width, int height, int pixFmt, struct v4l2_pix_format_mplane & fmt);
+	int initPixFmt(int pixFmt, struct v4l2_pix_format_mplane & fmt);
 	void munmapBuffer(struct v4l2_buffer_user & buf);
 	int mmapBuffer(int type, int index, struct v4l2_buffer_user & buf);
 	int allocBuffers(struct v4l2_buffer_manager *buf_mag, int num_buffers, struct v4l2_format & fmt);
@@ -79,9 +79,6 @@ public:
 
 private:
 	int m_dev;
-
-	u32 m_src_num_buffers;
-	u32 m_dst_num_buffers;
 
 	struct v4l2_buffer_manager m_src_buf_mag;
 	struct v4l2_buffer_manager m_dst_buf_mag;

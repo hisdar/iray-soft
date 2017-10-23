@@ -97,44 +97,6 @@ int Vpe::init(int srcWidth, int srcHeight, int srcPixFmt,
 			int field, struct v4l2_rect &rect)
 {
 	int ret = 0;
-	struct v4l2_pix_format_mplane &src_pix = m_src_fmt.fmt.pix_mp;
-	struct v4l2_pix_format_mplane &dst_pix = m_dst_fmt.fmt.pix_mp;
-
-	// check field
-	if (field != V4L2_FIELD_ALTERNATE
-		&& field != V4L2_FIELD_SEQ_TB
-		&& field != V4L2_FIELD_ANY) {
-		iray_err("check field value fail, field=%d\n", field);
-		return -ENOPARA;
-	}
-
-	m_src_num_buffers = NUM_OF_SRC_BUFFERS;
-	m_dst_num_buffers = NUM_OF_DST_BUFFERS;
-
-	m_src_fmt.type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
-	src_pix.field  = field;
-	ret = initPixFmt(srcWidth, srcHeight, srcPixFmt, src_pix);
-	if (ret) {
-		iray_err("init src pix fmt fail, ret=%d\n", ret);
-		return ret;
-	}
-	
-	m_dst_fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
-	dst_pix.field  = V4L2_FIELD_ANY;
-	ret = initPixFmt(dstWidth, dstHeight, dstPixFmt, dst_pix);
-	if (ret) {
-		iray_err("init dst pix fmt fail, ret=%d\n", ret);
-		return ret;
-	}
-
-	// init selection
-	memcpy(&m_selection.r, &rect, sizeof(struct v4l2_rect));
-	m_selection.type   = V4L2_BUF_TYPE_VIDEO_OUTPUT;
-	m_selection.target = V4L2_SEL_TGT_CROP_ACTIVE;
-
-	// init v4l2_buffer
-	ret = initV4l2Buffer(m_src_buffer, m_src_fmt);
-	ret = initV4l2Buffer(m_dst_buffer, m_dst_fmt);
 
 	// open device, because we are going to set it
 	ret = open();
@@ -148,6 +110,8 @@ int Vpe::init(int srcWidth, int srcHeight, int srcPixFmt,
 		iray_err("s_ctrl fail, ret=%d\n", ret);
 		return ret;
 	}
+
+	// init capture and output
 
 	// alloc buffers
 	ret = allocBuffers(&m_src_buf_mag, NUM_OF_SRC_BUFFERS, m_src_fmt);
@@ -192,28 +156,6 @@ int Vpe::init(int srcWidth, int srcHeight, int srcPixFmt,
 		get(data, 1);
 	}
 	
-
-	return SUCCESS;
-}
-
-int Vpe::initV4l2Buffer(struct v4l2_buffer &buf, struct v4l2_format &fmt)
-{
-	int num_planes = 0;
-	struct v4l2_plane *planes = NULL;
-
-	num_planes = fmt.fmt.pix_mp.num_planes;
-	planes = (struct v4l2_plane *)malloc(sizeof(struct v4l2_plane) * num_planes);
-	if (NULL == planes) {
-		iray_err("malloc memory for plane fail\n");
-		return -ENOMEM;
-	}
-
-	memset(&buf, 0x00, sizeof(struct v4l2_buffer));
-	buf.type     = fmt.type;
-	buf.memory   = V4L2_MEMORY_MMAP;
-	buf.field    = fmt.fmt.pix_mp.field;
-	buf.length   = num_planes;
-	buf.m.planes = planes;
 
 	return SUCCESS;
 }
@@ -318,7 +260,7 @@ int Vpe::initUserBuffers(struct v4l2_buffer_manager *buf_mag, int size, int num_
 	return ret;
 }
 
-int Vpe::initPixFmt(int width, int height, int pixFmt, struct v4l2_pix_format_mplane &fmt)
+int Vpe::initPixFmt(int pixFmt, struct v4l2_pix_format_mplane &fmt)
 {
 	int ret = 0;
 	struct vpe_color_type color_type = {0};
@@ -328,11 +270,9 @@ int Vpe::initPixFmt(int width, int height, int pixFmt, struct v4l2_pix_format_mp
 		return ret;
 	}
 
-	fmt.width = width;
-	fmt.height = height;
-	fmt.colorspace = color_type.clrspc;
 	fmt.pixelformat = color_type.pixelformat;
-	fmt.num_planes = color_type.num_planes;
+	fmt.colorspace  = color_type.clrspc;
+	fmt.num_planes  = color_type.num_planes;
 
 	return SUCCESS;
 }
@@ -428,24 +368,6 @@ int Vpe::allocBuffers(struct v4l2_buffer_manager *buf_mag, int num_buffers, stru
 	int i = 0;
 	int ret = SUCCESS;
 
-	ret = s_fmt(fmt);
-	if (ret) {
-		iray_err("s_fmt fail, ret=%d\n", ret);
-		return ret;
-	}
-
-	ret = s_selection();
-	if (ret) {
-		iray_err("s_selection fail, ret=%d\n", ret);
-		return ret;
-	}
-
-	ret = req_bufs(fmt.type, num_buffers);
-	if (ret <= 0) {
-		iray_err("req_bufs fail, ret=%d\n", ret);
-		return -ENOMEM;
-	}
-
 	num_buffers = ret;
 	ret = initUserBuffers(buf_mag, num_buffers, fmt.fmt.pix_mp.num_planes);
 	if (ret) {
@@ -474,63 +396,22 @@ int Vpe::allocBuffers(struct v4l2_buffer_manager *buf_mag, int num_buffers, stru
 
 int Vpe::s_fmt(struct v4l2_format &fmt)
 {
-	int ret = 0;
-
-	ret = ioctl(m_dev, VIDIOC_S_FMT, &fmt);
-	if (ret < 0) {
-		iray_err("set src fmt fail, ret=%d\n", ret);
-		return ret;
-	} 
-
-	return SUCCESS;
+	return ioctl(m_dev, VIDIOC_S_FMT, &fmt);
 }
 
-int Vpe::s_selection()
+int Vpe::s_selection(struct v4l2_selection selection)
 {
-	int ret = 0;
-
-	ret = ioctl(m_dev, VIDIOC_S_SELECTION, &m_selection);
-	if (ret < 0) {
-		iray_err("set dst selection fail, ret=%d\n", ret);
-		return ret;
-	}
-
-	return SUCCESS;
+	return ioctl(m_dev, VIDIOC_S_SELECTION, &selection);
 }
 
-int Vpe::req_bufs(int type, int num_buffers)
+int Vpe::req_bufs(struct v4l2_requestbuffers &req_buf)
 {
-	int ret = 0;
-	struct v4l2_requestbuffers reqbuf = {0};
-	
-	reqbuf.type	  = type;
-	reqbuf.count  = num_buffers;
-	reqbuf.memory = V4L2_MEMORY_MMAP;
-
-	// TODO: store requsted buffer
-	ret = ioctl(m_dev, VIDIOC_REQBUFS, &reqbuf);
-	if (ret) {
-		iray_err("request buffers fail, ret=%d\n", ret);
-		return ret;
-	}
-
-	if ((u32)num_buffers != reqbuf.count) {
-		iray_warning("requesed buffer count not match src, num_buffers=%d, reqbuf.count=%d\n",
-			num_buffers, reqbuf.count);
-	}
-
-	return reqbuf.count;
+	return ioctl(m_dev, VIDIOC_REQBUFS, &req_buf);
 }
 
 int Vpe::stream_on(int type)
 {
-	int	ret = SUCCESS;
-	ret = ioctl(m_dev, VIDIOC_STREAMON, &type);
-	if (ret) {
-		iray_err("stream on fail, type=%d\n", type);
-	}
-
-	return ret;
+	return ioctl(m_dev, VIDIOC_STREAMON, &type);
 }
 
 int Vpe::query_planes(int type, int index, struct v4l2_plane *planes, int num_planes)
@@ -545,12 +426,17 @@ int Vpe::query_planes(int type, int index, struct v4l2_plane *planes, int num_pl
 	buf.m.planes = planes;
 	buf.length	 = num_planes;
 
-	ret = ioctl(m_dev, VIDIOC_QUERYBUF, &buf);
+	ret = query_buf(buf);
 	if (ret) {
 		iray_err("src query buf fail, ret=%d\n", ret);
 	}
 
 	return ret;
+}
+
+int Vpe::query_buf(struct v4l2_buffer &buf)
+{
+	return ioctl(m_dev, VIDIOC_QUERYBUF, &buf);
 }
 
 int Vpe::findColorTypeByName(char *name, struct vpe_color_type *fmt)

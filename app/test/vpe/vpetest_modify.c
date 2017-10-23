@@ -280,16 +280,9 @@ int src_s_fmt()
 
 }
 
-int s_selection()
+int s_selection(struct v4l2_selection selection)
 {
-	int ret = 0;
-	if (selection.type == V4L2_BUF_TYPE_VIDEO_OUTPUT) {
-		ret = ioctl(fd, VIDIOC_S_SELECTION, &selection);
-		if (ret < 0)
-			pexit("error setting selection\n");
-	}
-
-	return 0;
+	return ioctl(m_dev, VIDIOC_S_SELECTION, &selection);
 }
 
 int dst_req_bufs()
