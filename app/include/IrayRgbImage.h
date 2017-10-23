@@ -30,7 +30,7 @@ typedef struct iray_rgb {
 
 typedef enum iray_color_type {
     COLOR_TYPE_RGB,
-    COLOR_TYPE_ARGB,    
+    COLOR_TYPE_ARGB,
 } COLOR_TYPE;
 
 typedef enum iray_img_type {

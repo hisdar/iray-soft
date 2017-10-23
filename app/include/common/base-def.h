@@ -61,7 +61,9 @@
 #else
 #define iray_dbg(fmt, arg...)
 #endif
-	
+
+#define iray_warning(fmt, arg...)	\
+			printf("%s%s-%d:" fmt , "[Iray][Warning]", __func__, __LINE__, ##arg)
 #define iray_err(fmt, arg...)	\
 			printf("%s%s-%d:" fmt , "[Iray][err]", __func__, __LINE__, ##arg)
 #define iray_info(fmt, arg...)	\

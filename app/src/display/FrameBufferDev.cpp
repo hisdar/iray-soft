@@ -13,12 +13,21 @@
 #include <stdio.h>
 #include <sys/types.h>  
 #include "FrameBufferDev.h"
+#include <Vpe.h>
+
+#define USE_VPE 1
 
 FrameBufferDev::FrameBufferDev()
 {
+	int ret = 0;
 	m_fb = 0;
 	m_fb_buf_len = 0;
 	m_fb_mem_addr = NULL;
+	m_src_img.create(1920, 1080, COLOR_TYPE_ARGB);
+	ret = m_vpe.init(640, 576, V4L2_PIX_FMT_YUYV, 1920, 1080, V4L2_PIX_FMT_RGB32);
+	if (ret) {
+		iray_err("vpe init fail\n");
+	}
 }
 
 FrameBufferDev::~FrameBufferDev()
@@ -192,7 +201,30 @@ int FrameBufferDev::showScreenInfo()
 	return 0;
 }
 
+#if USE_VPE
+int FrameBufferDev::receiveFrame(IrayCameraData *frameData)
+{
+	int ret = 0;
 
+	char *src_addr[2];
+	src_addr[0] = frameData->getAddr();
+	ret = m_vpe.put((void **)src_addr, 1);
+	if (ret) {
+		iray_err("vpe put fail\n");
+		return 0;
+	}
+
+	char *dst_addr[2];
+	dst_addr[0] = m_src_img.getData();
+	ret = m_vpe.get(dst_addr, 1);
+	if (ret) {
+		iray_err("vpe get fail\n");
+		return 0;
+	}
+
+	return outputImage(&m_src_img, 0, 0);
+}
+#else
 int FrameBufferDev::receiveFrame(IrayCameraData *frameData)
 {
 	int ret = 0;
@@ -221,3 +253,4 @@ int FrameBufferDev::receiveFrame(IrayCameraData *frameData)
 
 	return outputImage(&m_src_img, 640, 252);
 }
+#endif

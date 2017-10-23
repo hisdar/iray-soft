@@ -9,14 +9,35 @@
 
 #include <Vpe.h>
 
+struct vpe_color_type color_type_list[] = {
+	// name    pixelformat         num_planes bpp clrspc
+	{"rgb24",  V4L2_PIX_FMT_RGB24, 1,         3,  V4L2_COLORSPACE_SRGB},
+	{"bgr24",  V4L2_PIX_FMT_BGR24, 1,         3,  V4L2_COLORSPACE_SRGB},
+	{"argb32", V4L2_PIX_FMT_RGB32, 1,         4,  V4L2_COLORSPACE_SRGB},
+	{"abgr32", V4L2_PIX_FMT_BGR32, 1,         4,  V4L2_COLORSPACE_SRGB},
+	{"rgb565", V4L2_PIX_FMT_RGB565,1,         2,  V4L2_COLORSPACE_SRGB},
+	{"yuv444", V4L2_PIX_FMT_YUV444,1,         3,  V4L2_COLORSPACE_SMPTE170M},
+	{"yvyu",   V4L2_PIX_FMT_YVYU,  1,         2,  V4L2_COLORSPACE_SMPTE170M},
+	{"yuyv",   V4L2_PIX_FMT_YUYV,  1,         2,  V4L2_COLORSPACE_SMPTE170M},
+	{"uyvy",   V4L2_PIX_FMT_UYVY,  1,         2,  V4L2_COLORSPACE_SMPTE170M},
+	{"vyuy",   V4L2_PIX_FMT_VYUY,  1,         2,  V4L2_COLORSPACE_SMPTE170M},
+	{"nv16",   V4L2_PIX_FMT_NV16,  1,         2,  V4L2_COLORSPACE_SMPTE170M},
+	{"nv61",   V4L2_PIX_FMT_NV61,  1,         2,  V4L2_COLORSPACE_SMPTE170M},
+	{"nv12s",  V4L2_PIX_FMT_NV12,  1,         1.5,V4L2_COLORSPACE_SMPTE170M},
+	{"nv21s",  V4L2_PIX_FMT_NV21,  1,         1.5,V4L2_COLORSPACE_SMPTE170M},
+	{"nv12",   V4L2_PIX_FMT_NV12,  2,         1.5,V4L2_COLORSPACE_SMPTE170M},
+	{"nv21",   V4L2_PIX_FMT_NV21,  2,         1.5,V4L2_COLORSPACE_SMPTE170M},
+	{"nm12",   V4L2_PIX_FMT_NV12M, 2,         1.5,V4L2_COLORSPACE_SMPTE170M},
+	{"nm21",   V4L2_PIX_FMT_NV21M, 2,         1.5,V4L2_COLORSPACE_SMPTE170M}
+};
+
 #define V4L2_CID_TRANS_NUM_BUFS (V4L2_CID_USER_TI_VPE_BASE + 0)
 #define TRANS_LEN               (3) // <1-4>
 
 Vpe::Vpe()
 {
-
-	memset(m_src_buf_user, 0x00, sizeof(struct v4l2_buffer_user) * NUM_OF_SRC_BUFFERS);
-	memset(m_dst_buf_user, 0x00, sizeof(struct v4l2_buffer_user) * NUM_OF_DST_BUFFERS);
+	memset(&m_src_buf_mag, 0x00, sizeof(struct v4l2_buffer_manager));
+	memset(&m_dst_buf_mag, 0x00, sizeof(struct v4l2_buffer_manager));
 }
 
 Vpe::~Vpe()
@@ -34,22 +55,41 @@ int Vpe::formatSwap(IrayImage &src, IrayImage &dst)
 int Vpe::init(int srcWidth, int srcHeight, int srcPixFmt,
 			int dstWidth, int dstHeight, int dstPixFmt)
 {
-	return 0;
+	struct v4l2_rect rect = {0};
+
+	rect.left   = 0;
+	rect.top    = 0;
+	rect.width  = srcWidth;
+	rect.height = srcHeight;
+
+	return init(srcWidth, srcHeight, srcPixFmt,
+		dstWidth, dstHeight, dstPixFmt,
+		V4L2_FIELD_ANY, rect);
 }
 
 int Vpe::init(int srcWidth, int srcHeight, int srcPixFmt,
 			int dstWidth, int dstHeight, int dstPixFmt,
 				struct v4l2_rect &rect)
 {
-	return 0;
+	return init(srcWidth, srcHeight, srcPixFmt,
+		dstWidth, dstHeight, dstPixFmt,
+		V4L2_FIELD_ANY, rect);
 }
 
 int Vpe::init(int srcWidth, int srcHeight, int srcPixFmt,
 			int dstWidth, int dstHeight, int dstPixFmt,
 			int field)
 {
+	struct v4l2_rect rect = {0};
 
-	return 0;
+	rect.left   = 0;
+	rect.top    = 0;
+	rect.width  = srcWidth;
+	rect.height = srcHeight;
+
+	return init(srcWidth, srcHeight, srcPixFmt,
+		dstWidth, dstHeight, dstPixFmt,
+		field, rect);
 }
 
 int Vpe::init(int srcWidth, int srcHeight, int srcPixFmt,
@@ -62,9 +102,10 @@ int Vpe::init(int srcWidth, int srcHeight, int srcPixFmt,
 
 	// check field
 	if (field != V4L2_FIELD_ALTERNATE
-		&& field != V4L2_FIELD_SEQ_TB) {
+		&& field != V4L2_FIELD_SEQ_TB
+		&& field != V4L2_FIELD_ANY) {
 		iray_err("check field value fail, field=%d\n", field);
-		return -ENOPARA;	
+		return -ENOPARA;
 	}
 
 	m_src_num_buffers = NUM_OF_SRC_BUFFERS;
@@ -91,10 +132,6 @@ int Vpe::init(int srcWidth, int srcHeight, int srcPixFmt,
 	m_selection.type   = V4L2_BUF_TYPE_VIDEO_OUTPUT;
 	m_selection.target = V4L2_SEL_TGT_CROP_ACTIVE;
 
-	// init user buffers
-	ret = initUserBuffers(m_src_buf_user, NUM_OF_SRC_BUFFERS, m_src_fmt.fmt.pix_mp.num_planes);
-	ret = initUserBuffers(m_dst_buf_user, NUM_OF_DST_BUFFERS, m_dst_fmt.fmt.pix_mp.num_planes);
-
 	// init v4l2_buffer
 	ret = initV4l2Buffer(m_src_buffer, m_src_fmt);
 	ret = initV4l2Buffer(m_dst_buffer, m_dst_fmt);
@@ -107,24 +144,54 @@ int Vpe::init(int srcWidth, int srcHeight, int srcPixFmt,
 
 	// set
 	ret = s_ctrl();
-	if (!ret) {
+	if (ret) {
 		iray_err("s_ctrl fail, ret=%d\n", ret);
 		return ret;
 	}
 
 	// alloc buffers
-	ret = allocBuffers(m_src_buf_user, NUM_OF_SRC_BUFFERS, m_src_fmt);
+	ret = allocBuffers(&m_src_buf_mag, NUM_OF_SRC_BUFFERS, m_src_fmt);
+	if (ret) {
+		iray_err("alloc buffers for src fail\n");
+		return ret;
+	} else {
+		iray_info("alloc buffers for src success\n");
+	}
 
-	ret = allocBuffers(m_dst_buf_user, NUM_OF_DST_BUFFERS, m_dst_fmt);
+	ret = allocBuffers(&m_dst_buf_mag, NUM_OF_DST_BUFFERS, m_dst_fmt);
+	if (ret) {
+		iray_err("alloc buffers for dst fail\n");
+		return ret;
+	} else {
+		iray_info("alloc buffers for dst success \n");
+	}
 
 	// queue dst buffers:
 	// the dst buffers is used to receive the process result,
 	// so we should put the buffers to the queue befor start stream
-	ret = queueDstBuffers();
+	ret = queueAllBuffers(m_dst_buf_mag, m_dst_buffer);
+	if (ret) {
+		iray_err("queue dst buffer fail\n");
+		return ret;
+	}
 
 	// now, we can stream on
 	ret = stream_on(V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE);
 	ret = stream_on(V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE);
+
+	ret = queueAllBuffers(m_src_buf_mag, m_src_buffer);
+	if (ret) {
+		iray_err("queue src buffer fail\n");
+		return ret;
+	}
+
+	char *data[2];
+
+	data[0] = (char *)malloc(1920 * 1080 * 4);
+	for (int i = 0; i < m_src_buf_mag.size; i++) {
+		get(data, 1);
+	}
+	
 
 	return SUCCESS;
 }
@@ -144,13 +211,14 @@ int Vpe::initV4l2Buffer(struct v4l2_buffer &buf, struct v4l2_format &fmt)
 	memset(&buf, 0x00, sizeof(struct v4l2_buffer));
 	buf.type     = fmt.type;
 	buf.memory   = V4L2_MEMORY_MMAP;
+	buf.field    = fmt.fmt.pix_mp.field;
 	buf.length   = num_planes;
 	buf.m.planes = planes;
 
 	return SUCCESS;
 }
 
-int Vpe::q_buf(int index, struct v4l2_buffer &buf)
+int Vpe::q_buf(int index, struct v4l2_buffer &buf, struct v4l2_buffer_manager &buf_mag)
 {
 	int ret = SUCCESS;
 
@@ -158,35 +226,37 @@ int Vpe::q_buf(int index, struct v4l2_buffer &buf)
 	buf.memory   = V4L2_MEMORY_MMAP;
 
 	gettimeofday(&buf.timestamp, NULL);
-	
+
 	ret = ioctl(m_dev, VIDIOC_QBUF, &buf);
 	if (ret) {
 		iray_err("queue buffers fail, ret=%d, index=%d\n", ret, index);
 	}
 
-	return ret;	
+	buf_mag.buf_users[buf.index].is_queued = TRUE;
+
+	return ret;
 }
 
-
 // TODO: if not set the planes, what the value of planes after dqbuf ?
-/*int dq_buf(struct v4l2_buffer *buf)
-{
-	int ret = -1;
-
-	memset(buf, 0, sizeof(struct v4l2_buffer));
-	buf->type	  = type;
-	buf->memory	  = V4L2_MEMORY_MMAP;
-	buf->m.planes = buf_planes;
-	buf->length	  = 2;
-	ret = ioctl(fd, VIDIOC_DQBUF, buf);
-	return ret;
-}*/
-
-int Vpe::queueDstBuffers()
+int Vpe::dq_buf(struct v4l2_buffer_manager &buf_mag, struct v4l2_buffer &buf)
 {
 	int ret = 0;
-	for (int i = 0; i < NUM_OF_DST_BUFFERS; i++) {
-		ret = q_buf(i, m_dst_buffer);
+	ret = ioctl(m_dev, VIDIOC_DQBUF, &buf);
+	if (ret) {
+		return ret;
+	}
+
+	buf_mag.buf_users[buf.index].is_queued = FALSE;
+	return SUCCESS;
+}
+
+int Vpe::queueAllBuffers(struct v4l2_buffer_manager &buf_mag, struct v4l2_buffer &buf)
+{
+	int ret = 0;
+
+	// TODO: replace [3] to a variable from req_buf return
+	for (u32 i = 0; i < buf_mag.size; i++) {
+		ret = q_buf(i, buf, buf_mag);
 		if (ret) {
 			iray_err("queue buffer fail, index=%d\n", i);
 			return ret;
@@ -195,7 +265,6 @@ int Vpe::queueDstBuffers()
 
 	return SUCCESS;
 }
-
 
 int Vpe::initUserBuffer(struct v4l2_buffer_user &buf, int num_planes)
 {
@@ -215,17 +284,24 @@ void Vpe::releaseUserBuffer(struct v4l2_buffer_user &buf)
 	buf.num_planes = 0;
 }
 
-int Vpe::initUserBuffers(struct v4l2_buffer_user *buf, int buf_len, int num_planes)
+int Vpe::initUserBuffers(struct v4l2_buffer_manager *buf_mag, int size, int num_planes)
 {
 	int i = 0;
 	int ret = SUCCESS;
 
+	buf_mag->size = size;
+	buf_mag->buf_users = (struct v4l2_buffer_user *)malloc(sizeof(struct v4l2_buffer_user) * size);
+	if (buf_mag->buf_users == NULL) {
+		iray_err("alloc mem for buffer manager fail\n");
+		return -ENOMEM;
+	}
+
 	// clear the buffer
-	memset(buf, 0x00, sizeof(struct v4l2_buffer_user) * buf_len);
+	memset(buf_mag->buf_users, 0x00, sizeof(struct v4l2_buffer_user) * size);
 
 	// alloc mem for every buffer planes
-	for (i = 0; i < buf_len; i++) {
-		ret = initUserBuffer(buf[i], num_planes);
+	for (i = 0; i < size; i++) {
+		ret = initUserBuffer(buf_mag->buf_users[i], num_planes);
 		if (ret) {
 			iray_err("init User buffer fail, ret=%d, index=%d\n", ret, i);
 			break;
@@ -233,9 +309,9 @@ int Vpe::initUserBuffers(struct v4l2_buffer_user *buf, int buf_len, int num_plan
 	}
 
 	// error handle
-	if (i != buf_len) {
+	if (i != size) {
 		for (; i >= 0; i--) {
-			releaseUserBuffer(buf[i]);
+			releaseUserBuffer(buf_mag->buf_users[i]);
 		}
 	}
 	
@@ -281,7 +357,7 @@ int Vpe::s_ctrl()
 	ctrl.value = TRANS_LEN;
 
 	ret = ioctl(m_dev, VIDIOC_S_CTRL, &ctrl);
-	if (ret < 0) {
+	if (ret) {
 		iray_err("set ctrl fail, ret=%d\n", ret);
 		return ret;
 	}
@@ -315,20 +391,23 @@ int Vpe::mmapBuffer(int type, int index, struct v4l2_buffer_user &buf)
 	ret = query_planes(type, index, planes, buf.num_planes);
 	if (ret) {
 		iray_err("query planes fail, ret=%d\n", ret);
-
 		CHECK_FREE(planes);
 		return ret;
 	}
 
+	int prot = PROT_READ | PROT_WRITE;
+	int flags = MAP_SHARED;
+	off_t offset = planes[i].m.mem_offset;
+
 	for (i = 0; i < buf.num_planes; i++) {
-		mmap_addr = mmap(NULL, planes[i].length, PROT_READ | PROT_WRITE, MAP_SHARED, m_dev, planes[i].m.mem_offset);
+		mmap_addr = mmap(NULL, planes[i].length, prot, flags, m_dev, offset);
 		if (MAP_FAILED == mmap_addr) {
 			iray_err("mmap fail, i=%d, num_planes=%d\n", i, buf.num_planes);
 			break;
 		}
 		
-		buf.planes[i].addr = mmap_addr;
-		buf.planes[i].length = planes[i].length;
+		buf.planes[i].addr      = mmap_addr;
+		buf.planes[i].length    = planes[i].length;
 		buf.planes[i].is_mapped = TRUE;
 	}
 
@@ -344,37 +423,49 @@ int Vpe::mmapBuffer(int type, int index, struct v4l2_buffer_user &buf)
 /*
  * description : 
  */
-int Vpe::allocBuffers(struct v4l2_buffer_user *buf, int num_buffers, struct v4l2_format &fmt)
+int Vpe::allocBuffers(struct v4l2_buffer_manager *buf_mag, int num_buffers, struct v4l2_format &fmt)
 {
 	int i = 0;
 	int ret = SUCCESS;
 
 	ret = s_fmt(fmt);
 	if (ret) {
+		iray_err("s_fmt fail, ret=%d\n", ret);
 		return ret;
 	}
 
 	ret = s_selection();
 	if (ret) {
+		iray_err("s_selection fail, ret=%d\n", ret);
 		return ret;
 	}
 
 	ret = req_bufs(fmt.type, num_buffers);
+	if (ret <= 0) {
+		iray_err("req_bufs fail, ret=%d\n", ret);
+		return -ENOMEM;
+	}
+
+	num_buffers = ret;
+	ret = initUserBuffers(buf_mag, num_buffers, fmt.fmt.pix_mp.num_planes);
 	if (ret) {
+		iray_err("initV4l2BufferManager fail, ret=%d\n", ret);
 		return ret;
 	}
 
 	for (i = 0; i < num_buffers; i++) {
-		ret = mmapBuffer(fmt.type, i, buf[i]);
+		ret = mmapBuffer(fmt.type, i, buf_mag->buf_users[i]);
 		if (ret) {
+			iray_err("mmapBuffer fail, i=%d, num_buffers=%d\n", i, num_buffers);
 			break;
 		}
 	}
 
 	// error handle
 	if (i != num_buffers) {
+		iray_err("buffer mmap fail, i=%d, num_buffers=%d\n", i, num_buffers);
 		for (; i >= 0; i--) {
-			munmapBuffer(buf[i]);
+			munmapBuffer(buf_mag->buf_users[i]);
 		}	
 	}
 
@@ -416,13 +507,19 @@ int Vpe::req_bufs(int type, int num_buffers)
 	reqbuf.count  = num_buffers;
 	reqbuf.memory = V4L2_MEMORY_MMAP;
 
+	// TODO: store requsted buffer
 	ret = ioctl(m_dev, VIDIOC_REQBUFS, &reqbuf);
-	if ((ret < 0) || ((u32)num_buffers != reqbuf.count)) {
-		iray_err("request buffers fail, ret=%d, num_buffers=%d, reqbuf.count=%d\n", ret, num_buffers, reqbuf.count);
+	if (ret) {
+		iray_err("request buffers fail, ret=%d\n", ret);
 		return ret;
 	}
 
-	return 0;
+	if ((u32)num_buffers != reqbuf.count) {
+		iray_warning("requesed buffer count not match src, num_buffers=%d, reqbuf.count=%d\n",
+			num_buffers, reqbuf.count);
+	}
+
+	return reqbuf.count;
 }
 
 int Vpe::stream_on(int type)
@@ -449,7 +546,7 @@ int Vpe::query_planes(int type, int index, struct v4l2_plane *planes, int num_pl
 	buf.length	 = num_planes;
 
 	ret = ioctl(m_dev, VIDIOC_QUERYBUF, &buf);
-	if (ret < 0) {
+	if (ret) {
 		iray_err("src query buf fail, ret=%d\n", ret);
 	}
 
@@ -488,49 +585,85 @@ int Vpe::getDstLength()
 {
 	// TODO: 1. check init
 	// TODO: 2. find a good way to get dst length
-	return m_dst_buf_user[0].planes[0].length;
+	//return m_dst_buf_user[0].planes[0].length;
+	return 0;
 }
 
-// TODO: this function can be optimized 
-struct v4l2_buffer_user *Vpe::getAFreebuffer()
-{
-	// get a buffer to queue
-	for (int i = 0; i < NUM_OF_SRC_BUFFERS; i++) {
-		if (!m_src_buf_user[i].is_queued) {
-			return &m_src_buf_user[i];
-		}
-	}
-
-	return NULL;
-}
-
-int Vpe::put(void *data[], int data_len)
+int Vpe::put(void *data[], u32 data_len)
 {
 	int ret = 0;
-	int num_planes =  m_src_fmt.fmt.pix_mp.num_planes;
+	u32 num_planes = m_src_fmt.fmt.pix_mp.num_planes;
 
 	if (data_len != num_planes) {
 		iray_err("data len error, data len should be:[%d]\n", num_planes);
 		return -ENODATA;
 	}
 
-	struct v4l2_buffer_user *buf = getAFreebuffer();
-	if (buf == NULL) {
-		iray_err("no free buffer to use\n");
-		return -ENOMEM;
+	// get a buffer
+	struct v4l2_buffer v4l2_buf = {0};
+	v4l2_buf.type = m_src_fmt.type;
+	v4l2_buf.memory = V4L2_MEMORY_MMAP;
+	v4l2_buf.length = m_src_buffer.length;
+	v4l2_buf.m.planes = m_src_buffer.m.planes;
+
+	ret = dq_buf(m_src_buf_mag, v4l2_buf);
+	if (ret) {
+		iray_err("dq src buffer fail, ret=%d\n", ret);
+		return ret;
 	}
 
+	struct v4l2_buffer_user *buf_user = &m_src_buf_mag.buf_users[v4l2_buf.index];
+	for (u32 i = 0; i < data_len && i < buf_user->num_planes; i++) {
+
+		iray_dbg("src len=%d, dst len=%d, index=%d, addr=%x, is-mmaped:%d, is-queued:%d\n",
+			640 * 576 * 2,
+			buf_user->planes[i].length,
+			v4l2_buf.index,
+			buf_user->planes[i].addr,
+			buf_user->planes[i].is_mapped,
+			buf_user->is_queued);
+		memcpy(buf_user->planes[i].addr, data[i], buf_user->planes[i].length);
+	}
+	
 	// TODO: re-code
-	//ret = q_buf(m_src_fmt, index);	
+	m_src_buffer.type     = m_src_fmt.type;
+	m_src_buffer.memory   = V4L2_MEMORY_MMAP;
+	m_src_buffer.field    = m_src_fmt.fmt.pix_mp.field;
+
+	ret = q_buf(buf_user->index, m_src_buffer, m_src_buf_mag);
 	if (ret) {
+		iray_err("queue buffer[q_buf] fail\n");
 		return ret;
 	}
 	
 	return SUCCESS;
 }
 
-int Vpe::get()
+int Vpe::get(char *data[], u32 data_len)
 {
+	int ret = 0;
+	u32 num_planes =  m_src_fmt.fmt.pix_mp.num_planes;
+	if (data_len < num_planes) {
+		iray_err("data len error, data len should be:[%d]\n", num_planes);
+		return -ENODATA;
+	}
+
+	ret = dq_buf(m_dst_buf_mag, m_dst_buffer);
+	if (ret) {
+		iray_err("dq_buf error, ret=%d\n", ret);
+		return ret;
+	}
+
+	struct v4l2_plane_user *plane = NULL;
+	for (u32 i = 0; i < data_len && i < m_dst_buffer.length; i++) {
+		plane = &m_dst_buf_mag.buf_users[m_dst_buffer.index].planes[i];
+
+		memcpy(data[i], plane->addr, plane->length);
+	}
+
+	// put dst buffer back to the queue
+	ret = q_buf(m_dst_buffer.index, m_dst_buffer, m_dst_buf_mag);
+
 	return 0;
 }
 

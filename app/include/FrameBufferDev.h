@@ -5,6 +5,8 @@
 #include <IrayCameraRcv.h>
 #include "IrayRgbImage.h"
 
+#include <Vpe.h>
+
 #define SUCCESS 0
 
 #ifndef u32
@@ -28,6 +30,7 @@ private:
 	int m_fb;
 	u32 m_fb_buf_len;
 	char *m_fb_mem_addr;
+	Vpe m_vpe;
 
 	IrayRgbImage m_src_img;
 	IrayRgbImage m_fb_img;
