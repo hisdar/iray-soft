@@ -37,7 +37,7 @@ private:
 
 	struct fb_fix_screeninfo m_fix;
 	struct fb_var_screeninfo m_var;
-	struct fb_con2fbmap	  m_con;
+	struct fb_con2fbmap      m_con;
 
 	int queryScreenInfo();
 	int prepare_output();

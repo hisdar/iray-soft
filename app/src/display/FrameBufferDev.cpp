@@ -23,7 +23,7 @@ FrameBufferDev::FrameBufferDev()
 	m_fb = 0;
 	m_fb_buf_len = 0;
 	m_fb_mem_addr = NULL;
-	m_src_img.create(1920, 1080, COLOR_TYPE_ARGB);
+	m_src_img.create(1920, 1080, COLOR_TYPE_RGB);
 	ret = m_vpe.init(640, 576, V4L2_PIX_FMT_YUYV, 1920, 1080, V4L2_PIX_FMT_RGB32);
 	if (ret) {
 		iray_err("vpe init fail\n");
@@ -64,6 +64,11 @@ int FrameBufferDev::setFrameSize(u32 width, u32 height)
 	return SUCCESS;
 }
 
+int FrameBufferDev::setFormat()
+{
+	
+}
+
 int FrameBufferDev::prepareOutput()
 {
 	int ret = 0;
@@ -84,7 +89,7 @@ int FrameBufferDev::prepareOutput()
 
 	// 128 pix for hide
 	//ret = m_fb_img.create(m_var.xres + 128, m_var.yres, COLOR_TYPE_ARGB);
-	ret = m_fb_img.createFromExternalMem(m_fb_mem_addr, m_var.xres + 128, m_var.yres, COLOR_TYPE_ARGB);
+	ret = m_fb_img.createFromExternalMem(m_fb_mem_addr, m_var.xres + 128, m_var.yres, COLOR_TYPE_RGB);
 	if (ret ) {
 		iray_err("m_fb_img.create fail, ret = %d, size[%u, %u]\n",
 			ret, m_var.xres, m_var.yres);
@@ -103,8 +108,6 @@ int FrameBufferDev::outputImage(IrayRgbImage *img, int x, int y)
 		iray_err("m_fb_img draw fail, ret=%d\n", ret);
 		return ret;
 	}
-
-	//memcpy(m_fb_mem_addr, m_fb_img.getData(), m_fb_img.getLength());
 
 	return SUCCESS;
 }
@@ -206,17 +209,15 @@ int FrameBufferDev::receiveFrame(IrayCameraData *frameData)
 {
 	int ret = 0;
 
-	char *src_addr[2];
-	src_addr[0] = frameData->getAddr();
-	ret = m_vpe.put((void **)src_addr, 1);
+	char *src_addr = frameData->getAddr();
+	ret = m_vpe.put((void **)src_addr, frameData->getLength());
 	if (ret) {
 		iray_err("vpe put fail\n");
 		return 0;
 	}
 
-	char *dst_addr[2];
-	dst_addr[0] = m_src_img.getData();
-	ret = m_vpe.get(dst_addr, 1);
+	char *dst_addr = m_src_img.getData();
+	ret = m_vpe.get((void **)dst_addr, m_src_img.getLength());
 	if (ret) {
 		iray_err("vpe get fail\n");
 		return 0;

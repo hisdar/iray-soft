@@ -4,19 +4,25 @@
 #include <IrayRgbImage.h>
 #include <Vpe.h>
 
+#define SRC_WIDTH  640
+#define SRC_HEIGHT 576
+
+#define DST_WIDTH  1920
+#define DST_HEIGHT 1080
+
 int main(int argc, char *argv[])
 {
 	int ret = 0;
 	Vpe vpe;
 
-	u32 file_size = 640 * 576 * 2;
+	u32 file_size = SRC_WIDTH * SRC_HEIGHT * 2;
 	void *file_data = malloc(file_size);
 	if (file_data == NULL) {
 		printf("alloc mem for file data fail\n");
 		return 0;
 	}
 
-	u32 output_len = 1280 * 720 * 3;
+	u32 output_len = DST_WIDTH * DST_HEIGHT * 3;
 	char *output_data = (char *)malloc(output_len);
 	if (output_data == NULL) {
 		printf("alloc mem for output data fail\n");
@@ -37,7 +43,7 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	ret = vpe.init(640, 576, V4L2_PIX_FMT_YUYV, 1280, 720, V4L2_PIX_FMT_RGB24);
+	ret = vpe.init(SRC_WIDTH, SRC_HEIGHT, V4L2_PIX_FMT_YUYV, DST_WIDTH, DST_HEIGHT, V4L2_PIX_FMT_RGB24);
 	if (ret) {
 		printf("vpe init fail\n");
 		return 0;
@@ -45,21 +51,30 @@ int main(int argc, char *argv[])
 		printf("vpe init success\n");
 	}
 
-	ret = vpe.put(&file_data, 1);
-	if (ret) {
-		printf("put data to vpe fail\n");
-		return 0;
-	} else {
-		printf("put data to vpe success\n");
-	}
+	struct timeval tv_old, tv_new;
+	gettimeofday(&tv_old, NULL);
+	for (int i = 0; i < 1; i++) {
+		ret = vpe.put(file_data, file_size);
+		if (ret) {
+			printf("vpe put data fail\n");
+			return 0;
+		}
 
-	ret = vpe.get(&output_data, 1);
-	if (ret) {
-		printf("get data from vpe fail\n");
-		return 0;
-	} else {
-		printf("get data from vpe success\n");
+		ret = vpe.get(output_data, output_len);
+		if (ret) {
+			printf("vpe put data fail\n");
+			return 0;
+		}
 	}
+	gettimeofday(&tv_new, NULL);
+
+	long usec = tv_new.tv_usec - tv_old.tv_usec;
+	long sec = tv_new.tv_sec - tv_old.tv_sec;
+	if (usec < 0) {
+		usec += 1000000;
+		sec -= 1;
+	}
+	printf("Total time used[%lu.%lu]\n", sec, usec);
 
 	IrayRgbImage srcImg;
 	srcImg.create(640, 576, COLOR_TYPE_RGB);
@@ -67,7 +82,7 @@ int main(int argc, char *argv[])
 	srcImg.save("rgb-src.bmp", IRAY_IMG_TYPE_BMP);
 
 	IrayRgbImage img;
-	ret = img.createFromExternalMem(output_data, 1280, 720, COLOR_TYPE_RGB);
+	ret = img.createFromExternalMem(output_data, 1920, 1080, COLOR_TYPE_RGB);
 	if (ret) {
 		printf("create rgb image fail\n");
 		return 0;
@@ -80,6 +95,9 @@ int main(int argc, char *argv[])
 		printf("save rgb file fail\n");
 		return 0;
 	}
+
+	free(file_data);
+	free(output_data);
 
 	printf("success !!!\n");
 	return 0;
