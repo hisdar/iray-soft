@@ -23,7 +23,7 @@ FrameBufferDev::FrameBufferDev()
 	m_fb = 0;
 	m_fb_buf_len = 0;
 	m_fb_mem_addr = NULL;
-	m_src_img.create(1920, 1080, COLOR_TYPE_RGB);
+	m_src_img.create(1920, 1080, COLOR_TYPE_ARGB);
 	ret = m_vpe.init(640, 576, V4L2_PIX_FMT_YUYV, 1920, 1080, V4L2_PIX_FMT_RGB32);
 	if (ret) {
 		iray_err("vpe init fail\n");
@@ -66,7 +66,27 @@ int FrameBufferDev::setFrameSize(u32 width, u32 height)
 
 int FrameBufferDev::setFormat()
 {
-	
+	int ret = 0;
+	queryScreenInfo();
+
+	m_var.red.length     = 8;
+	m_var.green.length   = 8;
+	m_var.blue.length    = 8;
+	m_var.transp.length  = 0;
+	m_var.bits_per_pixel = 24;
+
+	m_var.transp.offset  = 0;
+	m_var.red.offset     = 16;
+	m_var.green.offset   = 8;
+	m_var.blue.offset    = 0;
+
+	ret = ioctl(m_fb, FBIOPUT_VSCREENINFO, &m_var);
+	if (ret < 0) {
+		iray_err("Error set variable information, ret=%d.\n", ret);
+		return ret;
+	}
+
+	return SUCCESS;
 }
 
 int FrameBufferDev::prepareOutput()
@@ -79,6 +99,10 @@ int FrameBufferDev::prepareOutput()
 	}
 
 	// setFrameSize(1280, 720);
+	//ret = setFormat();
+	if (ret) {
+		return ret;
+	}
 
 	m_fb_buf_len = m_fix.line_length * m_var.yres;// + 128 * m_var.bits_per_pixel;
 	m_fb_mem_addr = (char *)mmap(NULL, m_fb_buf_len, PROT_READ | PROT_WRITE, MAP_SHARED, m_fb, 0);
@@ -89,7 +113,7 @@ int FrameBufferDev::prepareOutput()
 
 	// 128 pix for hide
 	//ret = m_fb_img.create(m_var.xres + 128, m_var.yres, COLOR_TYPE_ARGB);
-	ret = m_fb_img.createFromExternalMem(m_fb_mem_addr, m_var.xres + 128, m_var.yres, COLOR_TYPE_RGB);
+	ret = m_fb_img.createFromExternalMem(m_fb_mem_addr, m_var.xres + 128, m_var.yres, COLOR_TYPE_ARGB);
 	if (ret ) {
 		iray_err("m_fb_img.create fail, ret = %d, size[%u, %u]\n",
 			ret, m_var.xres, m_var.yres);

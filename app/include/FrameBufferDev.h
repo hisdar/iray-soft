@@ -24,7 +24,7 @@ public:
 	int prepareOutput();
 	int setFrameSize(u32 width, u32 height);
 	int outputImage(IrayRgbImage *img, int x, int y);
-	
+	int setFormat();
 	int receiveFrame(IrayCameraData *frameData);
 private:
 	int m_fb;
