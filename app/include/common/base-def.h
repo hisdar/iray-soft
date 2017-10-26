@@ -43,6 +43,10 @@
 #define ENODEV		10
 #endif
 
+
+#define MAX_NAME_LEN 256
+
+
 #define CHECK_FREE(ptr) \
 	if (ptr != NULL) {  \
 		free(ptr);      \

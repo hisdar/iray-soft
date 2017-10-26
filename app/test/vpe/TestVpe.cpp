@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	u32 output_len = DST_WIDTH * DST_HEIGHT * 3;
+	u32 output_len = DST_WIDTH * DST_HEIGHT * 2;
 	char *output_data = (char *)malloc(output_len);
 	if (output_data == NULL) {
 		printf("alloc mem for output data fail\n");
@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	ret = vpe.init(SRC_WIDTH, SRC_HEIGHT, V4L2_PIX_FMT_YUYV, DST_WIDTH, DST_HEIGHT, V4L2_PIX_FMT_RGB24);
+	ret = vpe.init(SRC_WIDTH, SRC_HEIGHT, V4L2_PIX_FMT_YUYV, DST_WIDTH, DST_HEIGHT, V4L2_PIX_FMT_YUYV);
 	if (ret) {
 		printf("vpe init fail\n");
 		return 0;
@@ -51,8 +51,6 @@ int main(int argc, char *argv[])
 		printf("vpe init success\n");
 	}
 
-	struct timeval tv_old, tv_new;
-	gettimeofday(&tv_old, NULL);
 	for (int i = 0; i < 1; i++) {
 		ret = vpe.put(file_data, file_size);
 		if (ret) {
@@ -66,17 +64,8 @@ int main(int argc, char *argv[])
 			return 0;
 		}
 	}
-	gettimeofday(&tv_new, NULL);
 
-	long usec = tv_new.tv_usec - tv_old.tv_usec;
-	long sec = tv_new.tv_sec - tv_old.tv_sec;
-	if (usec < 0) {
-		usec += 1000000;
-		sec -= 1;
-	}
-	printf("Total time used[%lu.%lu]\n", sec, usec);
-
-	IrayRgbImage srcImg;
+	/*IrayRgbImage srcImg;
 	srcImg.create(640, 576, COLOR_TYPE_RGB);
 	srcImg.formatFromYUY2((char *)file_data, 640, 576);
 	srcImg.save("rgb-src.bmp", IRAY_IMG_TYPE_BMP);
@@ -97,7 +86,7 @@ int main(int argc, char *argv[])
 	}
 
 	free(file_data);
-	free(output_data);
+	free(output_data);*/
 
 	printf("success !!!\n");
 	return 0;

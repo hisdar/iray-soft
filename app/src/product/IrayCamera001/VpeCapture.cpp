@@ -3,6 +3,7 @@
 #include <sys/mman.h>
 
 #include <VpeCapture.h>
+#include <common/TimeMeasure.h>
 
 VpeCapture::VpeCapture(VpeDev *vpeDev)
 {
@@ -480,7 +481,9 @@ int VpeCapture::capture(void *data, u32 len)
 	struct v4l2_buffer_user *buf_users = NULL;
 	buf_users = &m_buf_mag_usr.buf_users[m_buf_for_dq.index];
 
+	TimeMeasure cpResultTime("copy result data time");
 	memcpy(data, buf_users->planes[0].addr, len);
+	cpResultTime.print();
 
 	struct v4l2_plane *planes = m_buf_mag.bufs[m_buf_for_dq.index].m.planes;
 	memset(planes, 0x00, sizeof(struct v4l2_plane));

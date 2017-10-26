@@ -19,6 +19,7 @@
 #include <IrayImageWriter.h>
 #include <IrayFrameRate.h>
 #include <FrameBufferDev.h>
+#include <GraphicsCard.h>
 
 int save_to_hex_file(char *path, int count);
 int save_to_raw_file(char *path, int count);
@@ -39,6 +40,7 @@ void print_help_info()
 	printf("\t-show-frame-info [count]: show frame info\n");
 	printf("\t-set-field [file type]  : show frame info\n");
 	printf("\t-fb					 : show frame to frame buffer\n");
+	printf("\t-gc					 : show frame to graphics card\n");
 }
 
 int start_net_camera(char *ip_addr, char *src_port)
@@ -195,6 +197,21 @@ int show_frame_to_fb()
 	return 0;
 }
 
+int show_frame_to_gc()
+{
+	IrayCamera camera;
+	GraphicsCard gc;
+
+	gc.init();
+
+	camera.setFrameReceiver(&gc);
+	camera.startCapture(0);
+
+	return 0;
+
+}
+
+
 int main(int argc, char *argv[])
 {
 	if (argc == 1) {
@@ -215,6 +232,8 @@ int main(int argc, char *argv[])
 		show_frame_info(argv[2]);
 	} else if (strcmp(argv[1], "-fb") == 0) {
 		show_frame_to_fb();
+	} else if (strcmp(argv[1], "-gc") == 0) {
+		show_frame_to_gc();
 	} else if (strcmp(argv[1], "-set-field") == 0) {
 		set_field_type(argv, argc);
 	} else {
