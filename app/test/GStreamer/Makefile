@@ -10,7 +10,8 @@ INC += -I /home/caowei/bin/ti-processor-sdk-linux-am57xx-evm-03.03.00.04/linux-d
 INC += -I /home/caowei/bin/ti-processor-sdk-linux-am57xx-evm-03.03.00.04/linux-devkit/sysroots/armv7ahf-neon-linux-gnueabi/usr/include/omap/
 INC += -I /home/caowei/bin/ti-processor-sdk-linux-am57xx-evm-03.03.00.04/linux-devkit/sysroots/armv7ahf-neon-linux-gnueabi/usr/include/gstreamer-1.0/
 INC += -I /home/caowei/bin/ti-processor-sdk-linux-am57xx-evm-03.03.00.04/linux-devkit/sysroots/armv7ahf-neon-linux-gnueabi/usr/include/glib-2.0/
-INC += -I /home/caowei/bin/ti-processor-sdk-linux-am57xx-evm-03.03.00.04/linux-devkit/sysroots/armv7ahf-neon-linux-gnueabi/usr/lib/gstreamer-1.0/include
+INC += -I /home/caowei/bin/ti-processor-sdk-linux-am57xx-evm-03.03.00.04/linux-devkit/sysroots/armv7ahf-neon-linux-gnueabi/usr/lib/gstreamer-1.0/
+INC += -I /home/caowei/bin/ti-processor-sdk-linux-am57xx-evm-03.03.00.04/linux-devkit/sysroots/armv7ahf-neon-linux-gnueabi/usr/lib/gstreamer-1.0/include/
 INC += -I /home/caowei/bin/ti-processor-sdk-linux-am57xx-evm-03.03.00.04/linux-devkit/sysroots/armv7ahf-neon-linux-gnueabi/usr/lib/glib-2.0/include/
 INC += -I $(HOME)/platform/omapdrm/
 
@@ -34,7 +35,7 @@ CFLAGS += -O3 -Wall -D_GNU_SOURCE -D_DEFAULT_SOURCE -D_XOPEN_SOURCE
 CFLAGS += -lpthread -lrt
 
 LDLIBS += $(shell $(PKG_CONFIG) --libs libdrm) $(shell $(PKG_CONFIG) --libs libdrm_omap)
-LDLIBS += -lgstreamer-1.0
+LDLIBS += -lgstreamer-1.0 -ldbus-glib-1
 
 all:
 	@$(CC) $(INC) $(LIB) $(SRC) $(LDLIBS) -o $(TAG) $(CFLAGS)

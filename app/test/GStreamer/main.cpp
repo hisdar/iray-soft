@@ -29,18 +29,23 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	g_object_set(app_src, "", "", NULL);
-	g_object_set(file_sink, "", "", NULL);
+	GstCaps *src_caps = gst_caps_new_simple("video/x-raw",
+							"format", G_TYPE_STRING, "RGB",
+							"width",  G_TYPE_INT, 640,
+							"height", G_TYPE_INT, 576,
+							"framerate", GST_TYPE_FRACTION, 25, 1,
+							 NULL);
+
+	g_object_set(G_OBJECT(app_src), "caps", src_caps, NULL);
+
 
 	/* Build the pipeline. and link source and sinl. */  
 	gst_bin_add_many(GST_BIN(pipe_line), app_src, file_sink, NULL);
 	if (!gst_element_link (app_src, file_sink)) {
 		printf("Elements could not be linked.\n");
-		gst_object_unref (data.pipeline);
+		gst_object_unref (pipe_line);
 		return -1;
 	}
-
-	
 
 	return 0;
 }
