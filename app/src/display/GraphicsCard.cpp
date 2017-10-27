@@ -72,11 +72,11 @@ void GraphicsCard::find_planes(int fd, struct modeset_out *modeset_list)
 
 int GraphicsCard::receiveFrame(IrayCameraData *frameData)
 {
-	int ret = 0;
+	//int ret = 0;
 	
 	char *src = frameData->getAddr();
-	u32 width = frameData->getImageWidth();
-	u32 height = frameData->getImageHeight();
+	//u32 width = frameData->getImageWidth();
+	//u32 height = frameData->getImageHeight();
 
 	if (src == NULL || frameData->getLength() == 0) {
 		iray_err("frame data is empty\n");
